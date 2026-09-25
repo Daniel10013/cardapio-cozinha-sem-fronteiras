@@ -12,12 +12,13 @@
 -- já existir (rodou este script antes), o comando correspondente é
 -- simplesmente ignorado, sem erro.
 --
--- Este projeto NÃO usa Row Level Security (RLS) porque todo acesso ao banco
--- passa pelas rotas de servidor do Next.js (app/api/**), que usam a chave
--- "service_role" (acesso total, só no servidor). O navegador do cliente
--- nunca fala direto com o Supabase. Por isso as tabelas ficam com RLS
--- desligado por padrão — é seguro NESTE desenho, porque a service_role key
--- nunca é exposta ao navegador (ver .env.example).
+-- Todo acesso ao banco passa pelas rotas de servidor do Next.js
+-- (app/api/**), que usam a chave "service_role" (acesso total, só no
+-- servidor) — o navegador do cliente nunca fala direto com o Supabase.
+-- Mesmo assim, o RLS (Row Level Security) é ligado em todas as tabelas
+-- abaixo, sem nenhuma política de acesso — isso bloqueia qualquer tentativa
+-- de acessar essas tabelas com a chave "anon" (pública), enquanto o
+-- service_role continua funcionando normalmente (ele sempre ignora RLS).
 -- ---------------------------------------------------------------------------
 
 create table if not exists csf_categorias (
@@ -84,6 +85,20 @@ create table if not exists csf_tentativas_login (
   falhas integer not null default 0,
   bloqueado_ate timestamptz
 );
+
+-- RLS ligado, sem políticas: bloqueia todo acesso via chave "anon" (pública),
+-- mas não afeta em nada o service_role usado pelo servidor (ele sempre
+-- ignora RLS). Sem isso, qualquer pessoa com a chave anon conseguiria ler
+-- ou alterar essas tabelas direto pela API do Supabase, sem passar pelo
+-- login do painel.
+alter table csf_categorias enable row level security;
+alter table csf_pratos enable row level security;
+alter table csf_pedidos enable row level security;
+alter table csf_itens_pedido enable row level security;
+alter table csf_fechamentos enable row level security;
+alter table csf_config enable row level security;
+alter table csf_acessos_admin enable row level security;
+alter table csf_tentativas_login enable row level security;
 
 -- Índices usados pelas consultas mais comuns (mês do pedido, mesa do dia)
 create index if not exists idx_csf_pedidos_criado_em on csf_pedidos (criado_em);
