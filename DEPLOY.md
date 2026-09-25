@@ -38,6 +38,12 @@ pra não arriscar nada.
 
 ## Passo 1 — Criar o projeto no Supabase
 
+> ✅ **Já feito para o projeto Emporio-Cozinha-Sem-Fronteiras**: as tabelas
+> `csf_*`, o RLS (sem políticas, só o `service_role` acessa) e o bucket
+> `csf-uploads` já foram criados nesse projeto Supabase — não precisa repetir
+> os passos abaixo. Isso só serve de referência caso você crie um projeto
+> Supabase novo no futuro (outro restaurante, ambiente de teste, etc.).
+
 1. Crie uma conta em [supabase.com](https://supabase.com) (pode entrar com GitHub).
 2. Clique em **"New project"**. Escolha um nome, uma senha de banco (guarde
    essa senha — é diferente da senha do painel do restaurante) e a região mais
@@ -45,13 +51,11 @@ pra não arriscar nada.
 3. Espere o projeto ser criado (leva ~2 minutos).
 4. Vá em **SQL Editor** (menu lateral) > **New query**.
 5. Abra o arquivo `supabase/schema.sql` deste projeto, copie todo o conteúdo,
-   cole no editor e clique em **Run**. Isso cria as tabelas `csf_*` e já
-   deixa um cardápio de exemplo cadastrado — **se você já tem outras tabelas
-   nesse banco, elas não são tocadas**, o script só adiciona as suas.
-6. Vá em **Storage** (menu lateral) > **New bucket**. Nome: `csf-uploads`.
-   Marque **"Public bucket"** (precisa ser público para as fotos aparecerem
-   no cardápio). Clique em **Create bucket**.
-7. Vá em **Project Settings** (ícone de engrenagem) > **API**. Você vai
+   cole no editor e clique em **Run**. Isso cria as tabelas `csf_*` (com RLS
+   já ativado), o bucket `csf-uploads` e um cardápio de exemplo — **se você
+   já tem outras tabelas nesse banco, elas não são tocadas**, o script só
+   adiciona as suas.
+6. Vá em **Project Settings** (ícone de engrenagem) > **API**. Você vai
    precisar de três valores nessa tela para o próximo passo:
    - **Project URL**
    - **anon / public key**

@@ -131,12 +131,11 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- Storage (fotos dos pratos e logo do restaurante)
 --
--- O SQL Editor não cria buckets de Storage. Faça manualmente uma vez:
---   1. No painel do Supabase, vá em "Storage" > "New bucket"
---   2. Nome: csf-uploads  (nome específico deste projeto, para não colidir
---      com um bucket "uploads" genérico que já exista no seu banco)
---   3. Marque "Public bucket" (as fotos do cardápio precisam ser públicas
---      para aparecer no site do cliente)
---   4. Criar
--- O código já está pronto para usar esse bucket (ver lib/supabaseAdmin.js).
+-- Cria o bucket "csf-uploads" (nome específico deste projeto, para não
+-- colidir com um bucket "uploads" genérico que já exista no seu banco),
+-- público (as fotos do cardápio precisam ser públicas para aparecer no
+-- site do cliente). "on conflict do nothing" torna seguro rodar de novo.
 -- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('csf-uploads', 'csf-uploads', true)
+on conflict (id) do nothing;
