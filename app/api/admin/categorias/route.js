@@ -10,7 +10,7 @@ export async function POST(request) {
   if (!nome) return Response.json({ erro: 'Nome da categoria é obrigatório.' }, { status: 400 });
 
   const { data, error } = await supabaseAdmin()
-    .from('categorias')
+    .from('csf_categorias')
     .insert({ nome, ordem: Number(ordem) || 0 })
     .select('id')
     .single();

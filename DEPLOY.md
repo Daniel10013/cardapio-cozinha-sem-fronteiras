@@ -12,13 +12,29 @@ completo, do zero até o site no ar.
   função que roda no servidor da Vercel (substituem o antigo `server/` do
   Express).
 - **Banco de dados:** Supabase (Postgres), em vez do SQLite local. O esquema
-  está em `supabase/schema.sql`.
-- **Arquivos (fotos dos pratos, logo):** Supabase Storage, em vez da pasta
-  `public/uploads/` local (que só existia no seu computador).
+  está em `supabase/schema.sql`. Todas as tabelas usam o prefixo **`csf_`**
+  (ex: `csf_pedidos`, `csf_pratos`) de propósito — se você conectar este
+  projeto a um banco Supabase que **já tem outras coisas** (de outro
+  projeto), o prefixo garante que nada colide com o que já existe. O script
+  só cria (`create table if not exists`), nunca apaga ou altera nada que já
+  esteja lá.
+- **Arquivos (fotos dos pratos, logo):** Supabase Storage, num bucket próprio
+  chamado `csf-uploads` (também prefixado, pelo mesmo motivo acima) — em vez
+  da pasta `public/uploads/` local (que só existia no seu computador).
 - **Login do painel:** continua com senha única, mas agora usa um cookie
   assinado (JWT) em vez de sessão guardada na memória do servidor — necessário
   porque a Vercel roda cada requisição numa função "sem estado" (serverless),
   que não mantém nada guardado entre uma chamada e outra.
+
+## Sobre "migration" — você precisa rodar alguma?
+
+Não tem um sistema de migration (tipo Prisma/Knex) aqui — é só **um arquivo
+SQL** (`supabase/schema.sql`) que você roda **uma vez** no SQL Editor do
+Supabase (Passo 1.5 abaixo) para criar as tabelas. Se um dia eu mudar o
+esquema (adicionar uma coluna nova, por exemplo), eu te aviso e te dou um
+segundo arquivo SQL só com o `alter table` necessário — nunca vou pedir pra
+rodar o `schema.sql` inteiro de novo por cima de um banco que já tem dados,
+pra não arriscar nada.
 
 ## Passo 1 — Criar o projeto no Supabase
 
@@ -29,11 +45,12 @@ completo, do zero até o site no ar.
 3. Espere o projeto ser criado (leva ~2 minutos).
 4. Vá em **SQL Editor** (menu lateral) > **New query**.
 5. Abra o arquivo `supabase/schema.sql` deste projeto, copie todo o conteúdo,
-   cole no editor e clique em **Run**. Isso cria todas as tabelas e já deixa
-   um cardápio de exemplo cadastrado.
-6. Vá em **Storage** (menu lateral) > **New bucket**. Nome: `uploads`. Marque
-   **"Public bucket"** (precisa ser público para as fotos aparecerem no
-   cardápio). Clique em **Create bucket**.
+   cole no editor e clique em **Run**. Isso cria as tabelas `csf_*` e já
+   deixa um cardápio de exemplo cadastrado — **se você já tem outras tabelas
+   nesse banco, elas não são tocadas**, o script só adiciona as suas.
+6. Vá em **Storage** (menu lateral) > **New bucket**. Nome: `csf-uploads`.
+   Marque **"Public bucket"** (precisa ser público para as fotos aparecerem
+   no cardápio). Clique em **Create bucket**.
 7. Vá em **Project Settings** (ícone de engrenagem) > **API**. Você vai
    precisar de três valores nessa tela para o próximo passo:
    - **Project URL**

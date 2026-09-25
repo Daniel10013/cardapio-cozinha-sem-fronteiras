@@ -5,7 +5,7 @@ export async function GET() {
   const naoAutenticado = await requireAuth();
   if (naoAutenticado) return naoAutenticado;
 
-  const { data, error } = await supabaseAdmin().from('pedidos').select('criado_em');
+  const { data, error } = await supabaseAdmin().from('csf_pedidos').select('criado_em');
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   const meses = Array.from(new Set((data || []).map((p) => p.criado_em.slice(0, 7)))).sort().reverse();

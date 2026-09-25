@@ -9,7 +9,7 @@ export async function GET(request) {
   const mes = searchParams.get('mes');
   const db = supabaseAdmin();
 
-  let query = db.from('pedidos').select('total, criado_em');
+  let query = db.from('csf_pedidos').select('total, criado_em');
   if (mes) {
     const inicio = `${mes}-01T00:00:00.000Z`;
     const [ano, mesNum] = mes.split('-').map(Number);

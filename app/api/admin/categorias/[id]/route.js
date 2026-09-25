@@ -13,7 +13,7 @@ export async function PATCH(request, { params }) {
   if (nome !== undefined) atualizacao.nome = nome;
   if (ordem !== undefined) atualizacao.ordem = Number(ordem);
 
-  const { error } = await supabaseAdmin().from('categorias').update(atualizacao).eq('id', id);
+  const { error } = await supabaseAdmin().from('csf_categorias').update(atualizacao).eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   return Response.json({ ok: true });
@@ -27,7 +27,7 @@ export async function DELETE(request, { params }) {
   const db = supabaseAdmin();
 
   const { count, error: erroContagem } = await db
-    .from('pratos')
+    .from('csf_pratos')
     .select('id', { count: 'exact', head: true })
     .eq('categoria_id', id);
   if (erroContagem) return Response.json({ erro: erroContagem.message }, { status: 500 });
@@ -35,7 +35,7 @@ export async function DELETE(request, { params }) {
     return Response.json({ erro: 'Remova ou mova os pratos desta categoria antes de excluí-la.' }, { status: 400 });
   }
 
-  const { error } = await db.from('categorias').delete().eq('id', id);
+  const { error } = await db.from('csf_categorias').delete().eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   return Response.json({ ok: true });

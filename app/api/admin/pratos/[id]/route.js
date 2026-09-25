@@ -25,7 +25,7 @@ export async function PATCH(request, { params }) {
   if (categoriaId !== undefined) atualizacao.categoria_id = categoriaId;
   if (tempoPreparo !== undefined) atualizacao.tempo_preparo = Math.max(0, Number(tempoPreparo) || 0);
 
-  const { error } = await supabaseAdmin().from('pratos').update(atualizacao).eq('id', id);
+  const { error } = await supabaseAdmin().from('csf_pratos').update(atualizacao).eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   return Response.json({ ok: true });
@@ -38,13 +38,13 @@ export async function DELETE(request, { params }) {
   const { id } = await params;
   const db = supabaseAdmin();
 
-  const { data: atual } = await db.from('pratos').select('foto').eq('id', id).maybeSingle();
+  const { data: atual } = await db.from('csf_pratos').select('foto').eq('id', id).maybeSingle();
   if (atual?.foto) {
     const nomeArquivo = atual.foto.split('/').pop();
     await db.storage.from(UPLOADS_BUCKET).remove([nomeArquivo]);
   }
 
-  const { error } = await db.from('pratos').delete().eq('id', id);
+  const { error } = await db.from('csf_pratos').delete().eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   return Response.json({ ok: true });

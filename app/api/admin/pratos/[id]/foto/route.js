@@ -23,7 +23,7 @@ export async function POST(request, { params }) {
   }
 
   const db = supabaseAdmin();
-  const { data: atual, error: erroAtual } = await db.from('pratos').select('foto').eq('id', id).maybeSingle();
+  const { data: atual, error: erroAtual } = await db.from('csf_pratos').select('foto').eq('id', id).maybeSingle();
   if (erroAtual) return Response.json({ erro: erroAtual.message }, { status: 500 });
   if (!atual) return Response.json({ erro: 'Prato não encontrado.' }, { status: 404 });
 
@@ -42,7 +42,7 @@ export async function POST(request, { params }) {
   }
 
   const { data: publicUrlData } = db.storage.from(UPLOADS_BUCKET).getPublicUrl(caminho);
-  await db.from('pratos').update({ foto: publicUrlData.publicUrl }).eq('id', id);
+  await db.from('csf_pratos').update({ foto: publicUrlData.publicUrl }).eq('id', id);
 
   return Response.json({ ok: true, foto: publicUrlData.publicUrl });
 }
@@ -54,7 +54,7 @@ export async function DELETE(request, { params }) {
   const { id } = await params;
   const db = supabaseAdmin();
 
-  const { data: atual, error: erroAtual } = await db.from('pratos').select('foto').eq('id', id).maybeSingle();
+  const { data: atual, error: erroAtual } = await db.from('csf_pratos').select('foto').eq('id', id).maybeSingle();
   if (erroAtual) return Response.json({ erro: erroAtual.message }, { status: 500 });
   if (!atual) return Response.json({ erro: 'Prato não encontrado.' }, { status: 404 });
 
@@ -63,6 +63,6 @@ export async function DELETE(request, { params }) {
     await db.storage.from(UPLOADS_BUCKET).remove([nomeArquivo]);
   }
 
-  await db.from('pratos').update({ foto: '' }).eq('id', id);
+  await db.from('csf_pratos').update({ foto: '' }).eq('id', id);
   return Response.json({ ok: true });
 }

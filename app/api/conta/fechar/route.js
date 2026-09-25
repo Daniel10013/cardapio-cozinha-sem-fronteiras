@@ -11,7 +11,7 @@ export async function POST(request) {
   const total = subtotal + taxaServico;
 
   const { data, error } = await supabaseAdmin()
-    .from('fechamentos')
+    .from('csf_fechamentos')
     .insert({
       mesa,
       subtotal,

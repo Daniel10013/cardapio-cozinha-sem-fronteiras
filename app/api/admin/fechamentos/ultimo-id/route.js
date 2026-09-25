@@ -6,7 +6,7 @@ export async function GET() {
   if (naoAutenticado) return naoAutenticado;
 
   const { data, error } = await supabaseAdmin()
-    .from('fechamentos')
+    .from('csf_fechamentos')
     .select('id')
     .order('id', { ascending: false })
     .limit(1)

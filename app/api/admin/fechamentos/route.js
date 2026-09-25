@@ -9,7 +9,7 @@ export async function GET(request) {
   const status = searchParams.get('status');
   const db = supabaseAdmin();
 
-  let query = db.from('fechamentos').select('*').order('criado_em', { ascending: false });
+  let query = db.from('csf_fechamentos').select('*').order('criado_em', { ascending: false });
   query = status ? query.eq('status', status) : query.limit(100);
 
   const { data, error } = await query;

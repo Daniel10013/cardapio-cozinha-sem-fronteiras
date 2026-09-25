@@ -4,14 +4,14 @@ export async function GET() {
   const db = supabaseAdmin();
 
   const { data: categorias, error: erroCat } = await db
-    .from('categorias')
+    .from('csf_categorias')
     .select('id, nome')
     .order('ordem')
     .order('id');
   if (erroCat) return Response.json({ erro: erroCat.message }, { status: 500 });
 
   const { data: pratos, error: erroPratos } = await db
-    .from('pratos')
+    .from('csf_pratos')
     .select('id, categoria_id, nome, descricao, preco, foto, tempo_preparo')
     .eq('ativo', true)
     .order('ordem')

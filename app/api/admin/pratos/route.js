@@ -16,7 +16,7 @@ export async function POST(request) {
   }
 
   const { data, error } = await supabaseAdmin()
-    .from('pratos')
+    .from('csf_pratos')
     .insert({
       categoria_id: categoriaId,
       nome,

@@ -17,7 +17,7 @@ export async function POST(request) {
   const db = supabaseAdmin();
   const idsPratos = itens.map((i) => i.pratoId);
   const { data: pratos, error: erroPratos } = await db
-    .from('pratos')
+    .from('csf_pratos')
     .select('id, nome, preco')
     .eq('ativo', true)
     .in('id', idsPratos);
@@ -48,7 +48,7 @@ export async function POST(request) {
 
   const criadoEm = new Date().toISOString();
   const { data: pedido, error: erroPedido } = await db
-    .from('pedidos')
+    .from('csf_pedidos')
     .insert({
       mesa: String(mesa || '').slice(0, 80),
       observacao: String(observacao || '').slice(0, 500),
@@ -61,7 +61,7 @@ export async function POST(request) {
   if (erroPedido) return Response.json({ erro: erroPedido.message }, { status: 500 });
 
   const { error: erroItens } = await db
-    .from('itens_pedido')
+    .from('csf_itens_pedido')
     .insert(itensValidos.map((item) => ({ ...item, pedido_id: pedido.id })));
   if (erroItens) return Response.json({ erro: erroItens.message }, { status: 500 });
 

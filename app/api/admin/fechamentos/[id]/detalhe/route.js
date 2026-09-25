@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
   const db = supabaseAdmin();
 
   const { data: fechamento, error: erroFechamento } = await db
-    .from('fechamentos')
+    .from('csf_fechamentos')
     .select('*')
     .eq('id', id)
     .maybeSingle();
@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
   inicioDoDia.setHours(0, 0, 0, 0);
 
   const { data: pedidos, error: erroPedidos } = await db
-    .from('pedidos')
+    .from('csf_pedidos')
     .select('id')
     .eq('mesa', fechamento.mesa)
     .neq('status', 'cancelado')
@@ -31,7 +31,7 @@ export async function GET(request, { params }) {
 
   const idsPedidos = pedidos.map((p) => p.id);
   const { data: itens, error: erroItens } = await db
-    .from('itens_pedido')
+    .from('csf_itens_pedido')
     .select('nome_prato, preco_unitario, quantidade, subtotal')
     .in('pedido_id', idsPedidos.length ? idsPedidos : [0]);
   if (erroItens) return Response.json({ erro: erroItens.message }, { status: 500 });

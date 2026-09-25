@@ -24,7 +24,7 @@ export async function POST(request) {
   await limparTentativas(ip);
   await criarSessao();
   await supabaseAdmin()
-    .from('acessos_admin')
+    .from('csf_acessos_admin')
     .insert({ ip, criado_em: new Date().toISOString() });
 
   return Response.json({ ok: true });
