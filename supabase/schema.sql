@@ -36,8 +36,14 @@ create table if not exists csf_pratos (
   ativo boolean not null default true,
   ordem integer not null default 0,
   foto text default '',
-  tempo_preparo integer default 0
+  tempo_preparo integer default 0,
+  peso text default '',
+  quantidade text default ''
 );
+
+-- Para bancos que já tinham csf_pratos antes de peso/quantidade existirem
+alter table csf_pratos add column if not exists peso text default '';
+alter table csf_pratos add column if not exists quantidade text default '';
 
 create table if not exists csf_pedidos (
   id bigint generated always as identity primary key,

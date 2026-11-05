@@ -216,6 +216,9 @@ function PaginaCliente() {
                         <div className="nome">{prato.nome}</div>
                         {prato.descricao && <div className="descricao">{prato.descricao}</div>}
                         <div className="preco">{formatarMoeda(prato.preco)}</div>
+                        {prato.peso || prato.quantidade ? (
+                          <div className="tempo-preparo">{[prato.peso && `⚖ ${prato.peso}`, prato.quantidade && `🍽 ${prato.quantidade}`].filter(Boolean).join(' · ')}</div>
+                        ) : null}
                         {prato.tempo_preparo ? <div className="tempo-preparo">⏱ {prato.tempo_preparo} min</div> : null}
                       </div>
                       <div className="qtd-controle">

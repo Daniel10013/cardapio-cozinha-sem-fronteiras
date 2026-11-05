@@ -6,7 +6,7 @@ export async function POST(request) {
   if (naoAutenticado) return naoAutenticado;
 
   const body = await request.json().catch(() => ({}));
-  const { categoriaId, nome, descricao, preco, ordem, tempoPreparo } = body || {};
+  const { categoriaId, nome, descricao, preco, ordem, tempoPreparo, peso, quantidade } = body || {};
   if (!categoriaId || !nome || preco === undefined) {
     return Response.json({ erro: 'Categoria, nome e preço são obrigatórios.' }, { status: 400 });
   }
@@ -25,6 +25,8 @@ export async function POST(request) {
       ativo: true,
       ordem: Number(ordem) || 0,
       tempo_preparo: tempoPreparo !== undefined ? Math.max(0, Number(tempoPreparo) || 0) : 0,
+      peso: String(peso || '').trim().slice(0, 40),
+      quantidade: String(quantidade || '').trim().slice(0, 40),
     })
     .select('id')
     .single();

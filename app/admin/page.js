@@ -575,17 +575,21 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
   const [descricao, setDescricao] = useState('');
   const [preco, setPreco] = useState('');
   const [tempoPreparo, setTempoPreparo] = useState('');
+  const [peso, setPeso] = useState('');
+  const [quantidade, setQuantidade] = useState('');
 
   async function adicionarPrato() {
     if (!nome || !preco) return alert('Preencha nome e preço do prato.');
     await api('/pratos', {
       method: 'POST',
-      body: JSON.stringify({ categoriaId: categoria.id, nome, descricao, preco, tempoPreparo }),
+      body: JSON.stringify({ categoriaId: categoria.id, nome, descricao, preco, tempoPreparo, peso, quantidade }),
     });
     setNome('');
     setDescricao('');
     setPreco('');
     setTempoPreparo('');
+    setPeso('');
+    setQuantidade('');
     onAtualizar();
   }
 
@@ -644,6 +648,20 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
           onChange={(e) => setTempoPreparo(e.target.value)}
           style={{ maxWidth: 120 }}
         />
+        <input
+          type="text"
+          placeholder="Peso (ex: 300g)"
+          value={peso}
+          onChange={(e) => setPeso(e.target.value)}
+          style={{ maxWidth: 130 }}
+        />
+        <input
+          type="text"
+          placeholder="Qtd (ex: 6 unid.)"
+          value={quantidade}
+          onChange={(e) => setQuantidade(e.target.value)}
+          style={{ maxWidth: 130 }}
+        />
         <button className="btn" onClick={adicionarPrato} type="button">
           Adicionar prato
         </button>
@@ -666,6 +684,15 @@ function PratoLinha({ prato, onAtualizar }) {
     const novoTempo = prompt('Tempo de preparo (em minutos):', prato.tempo_preparo || 0);
     if (novoTempo === null) return;
     await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify({ tempoPreparo: novoTempo }) });
+    onAtualizar();
+  }
+
+  async function editarPesoQuantidade() {
+    const novoPeso = prompt('Peso (ex: 300g, 1kg — deixe vazio para remover):', prato.peso || '');
+    if (novoPeso === null) return;
+    const novaQtd = prompt('Quantidade (ex: 6 unidades, 2 pessoas — deixe vazio para remover):', prato.quantidade || '');
+    if (novaQtd === null) return;
+    await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify({ peso: novoPeso, quantidade: novaQtd }) });
     onAtualizar();
   }
 
@@ -712,6 +739,8 @@ function PratoLinha({ prato, onAtualizar }) {
       <div className="info">
         <strong>{prato.nome}</strong> — {formatarMoeda(prato.preco)}
         {prato.tempo_preparo ? <span className="badge-tempo">⏱ {prato.tempo_preparo} min</span> : null}
+        {prato.peso ? <span className="badge-tempo">⚖ {prato.peso}</span> : null}
+        {prato.quantidade ? <span className="badge-tempo">🍽 {prato.quantidade}</span> : null}
         {prato.descricao && <div style={{ fontSize: '0.85rem', color: '#777' }}>{prato.descricao}</div>}
       </div>
       <button className="btn-secundario" onClick={() => inputFotoRef.current.click()} type="button">
@@ -728,6 +757,9 @@ function PratoLinha({ prato, onAtualizar }) {
       </button>
       <button className="btn-secundario" onClick={editarTempo} type="button">
         Tempo
+      </button>
+      <button className="btn-secundario" onClick={editarPesoQuantidade} type="button">
+        Peso/Qtd
       </button>
       <button className="btn-secundario" onClick={alternarAtivo} type="button">
         {prato.ativo ? 'Desativar' : 'Ativar'}

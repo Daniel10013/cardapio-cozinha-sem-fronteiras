@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data: pratos, error: erroPratos } = await db
     .from('csf_pratos')
-    .select('id, categoria_id, nome, descricao, preco, foto, tempo_preparo')
+    .select('id, categoria_id, nome, descricao, preco, foto, tempo_preparo, peso, quantidade')
     .eq('ativo', true)
     .order('ordem')
     .order('id');
