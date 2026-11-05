@@ -353,6 +353,20 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
     carregarPedidos(mes);
   }, [mes, carregarPedidos, gatilhoAtualizacao]);
 
+  // Contas já concluídas: o pedido feito antes do fechamento (na mesma comanda) aparece como "Fechado".
+  const [concluidos, setConcluidos] = useState([]);
+  useEffect(() => {
+    api('/fechamentos?status=concluido').then(setConcluidos).catch(() => {});
+  }, [fechamentosPendentes, gatilhoAtualizacao]);
+
+  function contaFechada(p) {
+    const criado = new Date(p.criado_em).getTime();
+    return concluidos.some((f) => {
+      const t = new Date(f.criado_em).getTime();
+      return f.mesa === p.mesa && t >= criado && t - criado < 18 * 3600000;
+    });
+  }
+
   async function alterarStatus(id, status) {
     await api(`/pedidos/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
     setPedidos((atual) => atual.map((p) => (p.id === id ? { ...p, status } : p)));
@@ -442,6 +456,7 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
               });
               const aberto = expandidoId === p.id;
               const totalItens = p.itens.reduce((soma, i) => soma + i.quantidade, 0);
+              const fechado = p.status !== 'cancelado' && contaFechada(p);
               return (
                 <Fragment key={p.id}>
                   <tr
@@ -456,16 +471,20 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                     </td>
                     <td>{formatarMoeda(p.total)}</td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      <select value={p.status} onChange={(e) => alterarStatus(p.id, e.target.value)}>
-                        {['recebido', 'em preparo', 'pronto', 'entregue', 'cancelado'].map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                      {fechado ? (
+                        <strong style={{ color: '#2e7d32' }}>✔ Fechado</strong>
+                      ) : (
+                        <select value={p.status} onChange={(e) => alterarStatus(p.id, e.target.value)}>
+                          {['recebido', 'em preparo', 'pronto', 'entregue', 'cancelado'].map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      {p.status !== 'cancelado' && p.mesa && (
+                      {!fechado && p.status !== 'cancelado' && p.mesa && (
                         <button className="btn-secundario" onClick={() => onFecharConta(p.mesa)} type="button">
                           Fechar conta
                         </button>
