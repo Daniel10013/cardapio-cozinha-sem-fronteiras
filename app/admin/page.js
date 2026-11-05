@@ -723,13 +723,15 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
   const [tempoPreparo, setTempoPreparo] = useState('');
   const [peso, setPeso] = useState('');
   const [quantidade, setQuantidade] = useState('');
+  const [novoPratoId, setNovoPratoId] = useState(null);
 
   async function adicionarPrato() {
     if (!nome || !preco) return alert('Preencha nome e preço do prato.');
-    await api('/pratos', {
+    const criado = await api('/pratos', {
       method: 'POST',
       body: JSON.stringify({ categoriaId: categoria.id, nome, descricao, preco, tempoPreparo, peso, quantidade }),
     });
+    setNovoPratoId(criado.id);
     setNome('');
     setDescricao('');
     setPreco('');
@@ -767,7 +769,13 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
       <div>
         {categoria.pratos.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nenhum prato ainda.</p>}
         {categoria.pratos.map((p) => (
-          <PratoLinha key={p.id} prato={p} irmaos={categoria.pratos} onAtualizar={onAtualizar} />
+          <PratoLinha
+            key={p.id}
+            prato={p}
+            irmaos={categoria.pratos}
+            abrirOpcoes={p.id === novoPratoId}
+            onAtualizar={onAtualizar}
+          />
         ))}
       </div>
       <div className="linha-form" style={{ marginTop: 10 }}>
@@ -812,6 +820,10 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
           Adicionar prato
         </button>
       </div>
+      <p style={{ fontSize: '0.85rem', color: '#666', margin: '6px 0 0' }}>
+        Dica: arroz, proteína, pastas, salada e adicionais são cadastrados depois de criar o prato, no botão{' '}
+        <b>Opções</b> que aparece na linha dele (abre sozinho ao criar).
+      </p>
     </div>
   );
 }
@@ -1011,10 +1023,10 @@ function EditorOpcoes({ prato, irmaos, onFechar }) {
   );
 }
 
-function PratoLinha({ prato, irmaos, onAtualizar }) {
+function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar }) {
   const inputFotoRef = useRef(null);
 
-  const [editandoOpcoes, setEditandoOpcoes] = useState(false);
+  const [editandoOpcoes, setEditandoOpcoes] = useState(!!abrirOpcoes);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({});
 
