@@ -589,13 +589,30 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
     onAtualizar();
   }
 
+  async function renomear() {
+    const novoNome = prompt('Novo nome da categoria:', categoria.nome);
+    if (novoNome === null) return;
+    if (!novoNome.trim()) return alert('O nome não pode ficar vazio.');
+    try {
+      await api('/categorias/' + categoria.id, { method: 'PATCH', body: JSON.stringify({ nome: novoNome.trim() }) });
+      onAtualizar();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   return (
     <div className="cartao categoria-bloco">
       <h3>
         {categoria.nome}
-        <button className="btn-perigo" onClick={() => onExcluir(categoria.id)} type="button">
-          Excluir categoria
-        </button>
+        <span>
+          <button className="btn-secundario" onClick={renomear} type="button" style={{ marginRight: 8 }}>
+            Renomear
+          </button>
+          <button className="btn-perigo" onClick={() => onExcluir(categoria.id)} type="button">
+            Excluir categoria
+          </button>
+        </span>
       </h3>
       <div>
         {categoria.pratos.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nenhum prato ainda.</p>}
