@@ -206,6 +206,18 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
     setReciboHtml({ ...detalhe, hora, nomeLoja: config.nomeLoja });
   }
 
+  function imprimirCozinha(pedido) {
+    const hora = new Date(pedido.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    setReciboHtml({
+      cozinha: true,
+      pedidoId: pedido.id,
+      mesa: pedido.mesa || '-',
+      hora,
+      observacao: pedido.observacao,
+      itens: pedido.itens.map((i) => ({ quantidade: i.quantidade, nome: i.nome_prato, opcoes: i.opcoes })),
+    });
+  }
+
   useEffect(() => {
     if (!reciboHtml) return;
     document.body.classList.add('imprimindo-recibo');
@@ -274,6 +286,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
             onImprimirConta={imprimirConta}
             onConcluirFechamento={concluirFechamento}
             onFecharConta={fecharContaManual}
+            onImprimirCozinha={imprimirCozinha}
             gatilhoAtualizacao={gatilhoAtualizacao}
           />
         )}
@@ -283,7 +296,33 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
         {aba === 'config' && <AbaConfig config={config} onConfigAtualizado={onConfigAtualizado} />}
       </main>
 
-      {reciboHtml && createPortal(
+      {reciboHtml && reciboHtml.cozinha && createPortal(
+        <div id="recibo-impressao" className="recibo-cozinha">
+          <h2>COZINHA — PEDIDO Nº {reciboHtml.pedidoId}</h2>
+          <div className="recibo-mesa">
+            {/^\d+$/.test(String(reciboHtml.mesa)) ? `MESA ${reciboHtml.mesa}` : String(reciboHtml.mesa).toUpperCase()}
+          </div>
+          <div className="recibo-subtitulo">{reciboHtml.hora}</div>
+          <div className="recibo-linha-sep" />
+          {reciboHtml.itens.map((i, idx) => (
+            <div className="recibo-cozinha-item" key={idx}>
+              <strong>
+                {i.quantidade}x {i.nome}
+              </strong>
+              {i.opcoes && <div className="recibo-cozinha-opcoes">{i.opcoes.split(' · ').map((o, k) => <div key={k}>• {o}</div>)}</div>}
+            </div>
+          ))}
+          {reciboHtml.observacao && (
+            <>
+              <div className="recibo-linha-sep" />
+              <div className="recibo-cozinha-obs">OBS: {reciboHtml.observacao}</div>
+            </>
+          )}
+        </div>,
+        document.body
+      )}
+
+      {reciboHtml && !reciboHtml.cozinha && createPortal(
         <div id="recibo-impressao">
           <h2>{reciboHtml.nomeLoja.toUpperCase()}</h2>
           <div className="recibo-subtitulo">
@@ -328,7 +367,14 @@ function formatarMesLabel(m) {
   return `${nomes[Number(mes) - 1]}/${ano}`;
 }
 
-function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechamento, onFecharConta, gatilhoAtualizacao }) {
+function AbaPedidos({
+  fechamentosPendentes,
+  onImprimirConta,
+  onConcluirFechamento,
+  onFecharConta,
+  onImprimirCozinha,
+  gatilhoAtualizacao,
+}) {
   const [meses, setMeses] = useState([]);
   const [mes, setMes] = useState('');
   const [pedidos, setPedidos] = useState([]);
@@ -437,13 +483,14 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
               <th>Itens</th>
               <th>Total</th>
               <th>Status</th>
+              <th>Cozinha</th>
               <th>Conta</th>
             </tr>
           </thead>
           <tbody>
             {pedidos.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', color: '#888' }}>
+                <td colSpan={7} style={{ textAlign: 'center', color: '#888' }}>
                   Nenhum pedido neste mês.
                 </td>
               </tr>
@@ -485,6 +532,13 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                       )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
+                      {p.status !== 'cancelado' && (
+                        <button className="btn-secundario" onClick={() => onImprimirCozinha(p)} type="button">
+                          Imprimir
+                        </button>
+                      )}
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
                       {!fechado && p.status !== 'cancelado' && p.mesa && (
                         <button className="btn-secundario" onClick={() => onFecharConta(p.mesa)} type="button">
                           Fechar conta
@@ -494,7 +548,7 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                   </tr>
                   {aberto && (
                     <tr style={{ background: '#faf7f2' }}>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         {p.itens.map((i) => (
                           <div
                             key={i.id}

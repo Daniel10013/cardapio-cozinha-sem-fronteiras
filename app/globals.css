@@ -454,6 +454,10 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
 #recibo-impressao .recibo-item { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
 #recibo-impressao .recibo-total-linha { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
 #recibo-impressao .recibo-total-linha.destaque { font-weight: 700; border-top: 1px dashed #000; margin-top: 4px; padding-top: 6px; }
+#recibo-impressao .recibo-mesa { text-align: center; font-size: 22px; font-weight: 700; margin: 4px 0; }
+#recibo-impressao .recibo-cozinha-item { padding: 5px 0; font-size: 15px; }
+#recibo-impressao .recibo-cozinha-opcoes { font-size: 13px; padding-left: 10px; margin-top: 2px; }
+#recibo-impressao .recibo-cozinha-obs { font-size: 14px; font-weight: 700; padding: 4px 0; }
 
 @media print {
   header.topo, nav.abas, .linha-form, #qr-endereco, .btn-imprimir-um {
