@@ -294,6 +294,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
             <div className="recibo-item" key={idx}>
               <span>
                 {i.quantidade}x {i.nome}
+                {i.opcoes && <small style={{ display: 'block', fontSize: '0.85em' }}>{i.opcoes}</small>}
               </span>
               <span>{formatarMoeda(i.subtotal)}</span>
             </div>
@@ -501,6 +502,7 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                           >
                             <span>
                               <strong>{i.quantidade}x</strong> {i.nome_prato}
+                              {i.opcoes && <div style={{ color: '#7a5a12', fontSize: '0.85rem' }}>{i.opcoes}</div>}
                             </span>
                             <span style={{ color: '#555' }}>
                               {formatarMoeda(i.preco_unitario)} cada — <strong>{formatarMoeda(i.subtotal)}</strong>
@@ -643,7 +645,9 @@ function AbaRelatorio({ gatilhoAtualizacao }) {
                           </span>
                         </div>
                         <div style={{ fontSize: '0.85rem', color: '#555' }}>
-                          {p.itens.map((i) => `${i.quantidade}x ${i.nome_prato}`).join(', ')}
+                          {p.itens
+                            .map((i) => `${i.quantidade}x ${i.nome_prato}${i.opcoes ? ` (${i.opcoes})` : ''}`)
+                            .join(', ')}
                         </div>
                         {p.observacao && (
                           <div style={{ fontSize: '0.85rem', color: '#7a5a12' }}>Obs: {p.observacao}</div>
@@ -763,7 +767,7 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
       <div>
         {categoria.pratos.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nenhum prato ainda.</p>}
         {categoria.pratos.map((p) => (
-          <PratoLinha key={p.id} prato={p} onAtualizar={onAtualizar} />
+          <PratoLinha key={p.id} prato={p} irmaos={categoria.pratos} onAtualizar={onAtualizar} />
         ))}
       </div>
       <div className="linha-form" style={{ marginTop: 10 }}>
@@ -812,9 +816,205 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
   );
 }
 
-function PratoLinha({ prato, onAtualizar }) {
+const SUGESTOES_GRUPO = [
+  { nome: 'Arroz', tipo: 'unica' },
+  { nome: 'Proteína', tipo: 'unica' },
+  { nome: 'Pastas', tipo: 'unica' },
+  { nome: 'Salada', tipo: 'unica' },
+  { nome: 'Adicionais', tipo: 'extra' },
+];
+
+function EditorOpcoes({ prato, irmaos, onFechar }) {
+  const [grupos, setGrupos] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+  const [copiarDe, setCopiarDe] = useState('');
+
+  useEffect(() => {
+    api('/pratos/' + prato.id + '/opcoes')
+      .then((lista) =>
+        setGrupos(
+          lista.map((g) => ({
+            nome: g.nome,
+            tipo: g.tipo,
+            opcoes: g.opcoes.map((o) => ({ nome: o.nome, precoAdicional: String(o.precoAdicional || '') })),
+          })),
+        ),
+      )
+      .catch((err) => {
+        alert(err.message);
+        onFechar();
+      });
+  }, [prato.id]);
+
+  function mudarGrupo(gi, mudanca) {
+    setGrupos((atual) => atual.map((g, i) => (i === gi ? { ...g, ...mudanca } : g)));
+  }
+  function mudarOpcao(gi, oi, mudanca) {
+    setGrupos((atual) =>
+      atual.map((g, i) =>
+        i === gi ? { ...g, opcoes: g.opcoes.map((o, j) => (j === oi ? { ...o, ...mudanca } : o)) } : g,
+      ),
+    );
+  }
+  function novaOpcao() {
+    return { nome: '', precoAdicional: '' };
+  }
+
+  async function copiar() {
+    if (!copiarDe) return;
+    if (grupos.length && !confirm('Isso troca as opções que estão na tela pelas do outro prato. Continuar?')) return;
+    try {
+      const lista = await api('/pratos/' + copiarDe + '/opcoes');
+      setGrupos(
+        lista.map((g) => ({
+          nome: g.nome,
+          tipo: g.tipo,
+          opcoes: g.opcoes.map((o) => ({ nome: o.nome, precoAdicional: String(o.precoAdicional || '') })),
+        })),
+      );
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function salvar() {
+    setSalvando(true);
+    try {
+      await api('/pratos/' + prato.id + '/opcoes', { method: 'PUT', body: JSON.stringify({ grupos }) });
+      onFechar(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (!grupos) return <div style={{ padding: 10, color: '#888' }}>Carregando opções...</div>;
+
+  const outros = (irmaos || []).filter((p) => p.id !== prato.id);
+
+  return (
+    <div style={{ background: '#faf7f2', padding: 12, borderRadius: 8, margin: '4px 0 10px' }}>
+      <strong>Opções de “{prato.nome}”</strong>
+      <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 10px' }}>
+        <b>Escolher 1</b>: o cliente é obrigado a escolher uma opção do grupo (ex: Arroz). <b>Adicional</b>: o cliente
+        marca quantos quiser e paga o valor extra de cada um.
+      </p>
+
+      {grupos.map((g, gi) => (
+        <div key={gi} style={{ background: '#fff', border: '1px solid #e5ddd0', borderRadius: 8, padding: 10, marginBottom: 10 }}>
+          <div className="linha-form" style={{ marginBottom: 6 }}>
+            <input
+              type="text"
+              placeholder="Nome do grupo (ex: Arroz)"
+              value={g.nome}
+              onChange={(e) => mudarGrupo(gi, { nome: e.target.value })}
+            />
+            <select value={g.tipo} onChange={(e) => mudarGrupo(gi, { tipo: e.target.value })}>
+              <option value="unica">Escolher 1 (obrigatório)</option>
+              <option value="extra">Adicional (cobrado à parte)</option>
+            </select>
+            <button
+              className="btn-perigo"
+              type="button"
+              onClick={() => setGrupos((atual) => atual.filter((_, i) => i !== gi))}
+            >
+              Remover grupo
+            </button>
+          </div>
+          {g.opcoes.map((o, oi) => (
+            <div className="linha-form" key={oi} style={{ marginBottom: 4 }}>
+              <input
+                type="text"
+                placeholder="Opção (ex: Arroz branco)"
+                value={o.nome}
+                onChange={(e) => mudarOpcao(gi, oi, { nome: e.target.value })}
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder={g.tipo === 'extra' ? 'Valor a mais (R$)' : 'Valor a mais (opcional)'}
+                value={o.precoAdicional}
+                onChange={(e) => mudarOpcao(gi, oi, { precoAdicional: e.target.value })}
+                style={{ maxWidth: 160 }}
+              />
+              <button
+                className="btn-secundario"
+                type="button"
+                onClick={() =>
+                  mudarGrupo(gi, { opcoes: g.opcoes.filter((_, j) => j !== oi) })
+                }
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button
+            className="btn-secundario"
+            type="button"
+            onClick={() => mudarGrupo(gi, { opcoes: [...g.opcoes, novaOpcao()] })}
+          >
+            + Adicionar opção
+          </button>
+        </div>
+      ))}
+
+      <div style={{ marginBottom: 10 }}>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>Adicionar grupo: </span>
+        {SUGESTOES_GRUPO.map((s) => (
+          <button
+            key={s.nome}
+            className="btn-secundario"
+            type="button"
+            style={{ marginRight: 6, marginBottom: 4 }}
+            onClick={() => setGrupos((atual) => [...atual, { ...s, opcoes: [novaOpcao()] }])}
+          >
+            + {s.nome}
+          </button>
+        ))}
+        <button
+          className="btn-secundario"
+          type="button"
+          style={{ marginBottom: 4 }}
+          onClick={() => setGrupos((atual) => [...atual, { nome: '', tipo: 'unica', opcoes: [novaOpcao()] }])}
+        >
+          + Outro
+        </button>
+      </div>
+
+      {outros.length > 0 && (
+        <div className="linha-form">
+          <select value={copiarDe} onChange={(e) => setCopiarDe(e.target.value)}>
+            <option value="">Copiar opções de outro prato...</option>
+            {outros.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nome}
+              </option>
+            ))}
+          </select>
+          <button className="btn-secundario" type="button" onClick={copiar} disabled={!copiarDe}>
+            Copiar
+          </button>
+        </div>
+      )}
+
+      <div className="linha-form" style={{ marginBottom: 0 }}>
+        <button className="btn" type="button" onClick={salvar} disabled={salvando}>
+          {salvando ? 'Salvando...' : 'Salvar opções'}
+        </button>
+        <button className="btn-secundario" type="button" onClick={() => onFechar()}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PratoLinha({ prato, irmaos, onAtualizar }) {
   const inputFotoRef = useRef(null);
 
+  const [editandoOpcoes, setEditandoOpcoes] = useState(false);
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({});
 
@@ -905,6 +1105,7 @@ function PratoLinha({ prato, onAtualizar }) {
   }
 
   return (
+    <>
     <div className={'prato-linha' + (prato.ativo ? '' : ' inativo')}>
       {prato.foto ? (
         <img className="prato-thumb" src={prato.foto} alt="" />
@@ -930,6 +1131,9 @@ function PratoLinha({ prato, onAtualizar }) {
       <button className="btn-secundario" onClick={abrirEdicao} type="button">
         Editar
       </button>
+      <button className="btn-secundario" onClick={() => setEditandoOpcoes((v) => !v)} type="button">
+        Opções
+      </button>
       <button className="btn-secundario" onClick={alternarAtivo} type="button">
         {prato.ativo ? 'Desativar' : 'Ativar'}
       </button>
@@ -937,6 +1141,17 @@ function PratoLinha({ prato, onAtualizar }) {
         Excluir
       </button>
     </div>
+    {editandoOpcoes && (
+      <EditorOpcoes
+        prato={prato}
+        irmaos={irmaos}
+        onFechar={(salvou) => {
+          setEditandoOpcoes(false);
+          if (salvou) alert('Opções salvas!');
+        }}
+      />
+    )}
+    </>
   );
 }
 

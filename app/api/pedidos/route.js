@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getConfig } from '@/lib/config';
+import { gruposDosPratos } from '@/lib/opcoes';
 
 export async function POST(request) {
   const aberto = (await getConfig('loja_aberta')) !== '0';
@@ -15,7 +16,7 @@ export async function POST(request) {
   }
 
   const db = supabaseAdmin();
-  const idsPratos = itens.map((i) => i.pratoId);
+  const idsPratos = [...new Set(itens.map((i) => i.pratoId))];
   const { data: pratos, error: erroPratos } = await db
     .from('csf_pratos')
     .select('id, nome, preco')
@@ -23,24 +24,57 @@ export async function POST(request) {
     .in('id', idsPratos);
   if (erroPratos) return Response.json({ erro: erroPratos.message }, { status: 500 });
 
+  let gruposPorPrato;
+  try {
+    gruposPorPrato = await gruposDosPratos(pratos.map((p) => p.id));
+  } catch (err) {
+    return Response.json({ erro: err.message }, { status: 500 });
+  }
+
   const itensValidos = [];
   let total = 0;
 
   for (const item of itens) {
     const qtd = Number(item.quantidade);
-    if (!item.pratoId || !Number.isInteger(qtd) || qtd <= 0) {
+    if (!item.pratoId || !Number.isInteger(qtd) || qtd <= 0 || qtd > 99) {
       return Response.json({ erro: 'Item de pedido inválido.' }, { status: 400 });
     }
     const prato = pratos.find((p) => p.id === item.pratoId);
     if (!prato) {
       return Response.json({ erro: `Prato não encontrado ou indisponível (id ${item.pratoId}).` }, { status: 400 });
     }
-    const subtotal = Number(prato.preco) * qtd;
+
+    // Opções escolhidas: o preço e os nomes vêm sempre do banco, nunca do navegador.
+    const escolhidas = new Set(Array.isArray(item.opcoes) ? item.opcoes.map(Number) : []);
+    const grupos = gruposPorPrato[prato.id] || [];
+    const todasOpcoes = new Set(grupos.flatMap((g) => g.opcoes.map((o) => o.id)));
+    for (const id of escolhidas) {
+      if (!todasOpcoes.has(id)) {
+        return Response.json({ erro: `Opção inválida para "${prato.nome}".` }, { status: 400 });
+      }
+    }
+
+    let adicional = 0;
+    const textos = [];
+    for (const g of grupos) {
+      const marcadas = g.opcoes.filter((o) => escolhidas.has(o.id));
+      if (g.tipo === 'unica' && marcadas.length !== 1) {
+        return Response.json({ erro: `Escolha uma opção de "${g.nome}" em ${prato.nome}.` }, { status: 400 });
+      }
+      if (marcadas.length) {
+        adicional += marcadas.reduce((soma, o) => soma + o.precoAdicional, 0);
+        textos.push(`${g.nome}: ${marcadas.map((o) => o.nome).join(', ')}`);
+      }
+    }
+
+    const precoUnitario = Math.round((Number(prato.preco) + adicional) * 100) / 100;
+    const subtotal = Math.round(precoUnitario * qtd * 100) / 100;
     total += subtotal;
     itensValidos.push({
       prato_id: prato.id,
       nome_prato: prato.nome,
-      preco_unitario: prato.preco,
+      opcoes: textos.join(' · '),
+      preco_unitario: precoUnitario,
       quantidade: qtd,
       subtotal,
     });

@@ -22,15 +22,21 @@ export async function GET(request, { params }) {
   const idsPedidos = pedidos.map((p) => p.id);
   const { data: itens, error: erroItens } = await db
     .from('csf_itens_pedido')
-    .select('nome_prato, preco_unitario, quantidade, subtotal')
+    .select('nome_prato, opcoes, preco_unitario, quantidade, subtotal')
     .in('pedido_id', idsPedidos.length ? idsPedidos : [0]);
   if (erroItens) return Response.json({ erro: erroItens.message }, { status: 500 });
 
   const mapaItens = new Map();
   for (const item of itens) {
-    const chave = `${item.nome_prato}|${item.preco_unitario}`;
+    const chave = `${item.nome_prato}|${item.opcoes || ''}|${item.preco_unitario}`;
     if (!mapaItens.has(chave)) {
-      mapaItens.set(chave, { nome: item.nome_prato, precoUnitario: item.preco_unitario, quantidade: 0, subtotal: 0 });
+      mapaItens.set(chave, {
+        nome: item.nome_prato,
+        opcoes: item.opcoes || '',
+        precoUnitario: item.preco_unitario,
+        quantidade: 0,
+        subtotal: 0,
+      });
     }
     const acumulado = mapaItens.get(chave);
     acumulado.quantidade += item.quantidade;

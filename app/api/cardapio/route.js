@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { gruposDosPratos } from '@/lib/opcoes';
 
 export async function GET() {
   const db = supabaseAdmin();
@@ -18,11 +19,20 @@ export async function GET() {
     .order('id');
   if (erroPratos) return Response.json({ erro: erroPratos.message }, { status: 500 });
 
+  let grupos;
+  try {
+    grupos = await gruposDosPratos(pratos.map((p) => p.id));
+  } catch (err) {
+    return Response.json({ erro: err.message }, { status: 500 });
+  }
+
   const resultado = categorias
     .map((cat) => ({
       id: cat.id,
       nome: cat.nome,
-      pratos: pratos.filter((p) => p.categoria_id === cat.id),
+      pratos: pratos
+        .filter((p) => p.categoria_id === cat.id)
+        .map((p) => ({ ...p, grupos: grupos[p.id] || [] })),
     }))
     .filter((cat) => cat.pratos.length > 0);
 

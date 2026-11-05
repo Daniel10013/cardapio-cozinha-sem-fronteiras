@@ -64,6 +64,28 @@ create table if not exists csf_itens_pedido (
   subtotal numeric(10,2) not null
 );
 
+-- Opções de cada prato: grupos ("Arroz", "Proteína", "Adicionais"...) e as
+-- opções de cada grupo. tipo 'unica' = cliente escolhe exatamente uma;
+-- tipo 'extra' = cliente pode marcar várias (ou nenhuma), cobradas à parte.
+create table if not exists csf_grupos_opcao (
+  id bigint generated always as identity primary key,
+  prato_id bigint not null references csf_pratos(id) on delete cascade,
+  nome text not null,
+  tipo text not null default 'unica',
+  ordem integer not null default 0
+);
+
+create table if not exists csf_opcoes (
+  id bigint generated always as identity primary key,
+  grupo_id bigint not null references csf_grupos_opcao(id) on delete cascade,
+  nome text not null,
+  preco_adicional numeric(10,2) not null default 0,
+  ordem integer not null default 0
+);
+
+-- Texto com o que o cliente escolheu em cada item do pedido
+alter table csf_itens_pedido add column if not exists opcoes text default '';
+
 create table if not exists csf_fechamentos (
   id bigint generated always as identity primary key,
   mesa text not null,
@@ -106,6 +128,8 @@ alter table csf_pratos enable row level security;
 alter table csf_pedidos enable row level security;
 alter table csf_itens_pedido enable row level security;
 alter table csf_fechamentos enable row level security;
+alter table csf_grupos_opcao enable row level security;
+alter table csf_opcoes enable row level security;
 alter table csf_config enable row level security;
 alter table csf_acessos_admin enable row level security;
 alter table csf_tentativas_login enable row level security;
@@ -114,6 +138,8 @@ alter table csf_tentativas_login enable row level security;
 create index if not exists idx_csf_pedidos_criado_em on csf_pedidos (criado_em);
 create index if not exists idx_csf_pedidos_mesa on csf_pedidos (mesa);
 create index if not exists idx_csf_itens_pedido_pedido_id on csf_itens_pedido (pedido_id);
+create index if not exists idx_csf_grupos_opcao_prato_id on csf_grupos_opcao (prato_id);
+create index if not exists idx_csf_opcoes_grupo_id on csf_opcoes (grupo_id);
 create index if not exists idx_csf_fechamentos_status on csf_fechamentos (status);
 
 -- Cardápio inicial de exemplo (só roda se csf_categorias estiver vazia)

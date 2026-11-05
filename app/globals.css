@@ -186,6 +186,24 @@ main { padding: 12px 12px 120px; max-width: 640px; margin: 0 auto; }
 .modal .btn-confirmar:disabled { background: #ccc; color: #777; cursor: not-allowed; }
 .modal .btn-cancelar { background: #eee; }
 
+.modal .grupo-opcoes { margin-top: 14px; }
+.modal .grupo-opcoes h4 { margin: 0 0 4px; font-size: 1rem; }
+.modal .grupo-opcoes .dica { font-size: 0.8rem; color: #888; margin-bottom: 4px; }
+.modal .opcao-linha {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; margin-top: 6px;
+  border: 1px solid #ddd; border-radius: 8px;
+  cursor: pointer; font-size: 0.95rem;
+}
+.modal .opcao-linha.marcada { border-color: #a3352b; background: #fbf1ef; }
+.modal .opcao-linha input { width: auto; margin: 0; flex: none; }
+.modal .opcao-linha .opcao-nome { flex: 1; }
+.modal .opcao-linha .opcao-preco { color: #a3352b; font-weight: 600; white-space: nowrap; }
+.btn-escolher {
+  padding: 8px 14px; border-radius: 8px; border: none;
+  background: #a3352b; color: #fff; font-size: 0.9rem; cursor: pointer;
+}
+
 .destaque-total {
   font-weight: 700;
   font-size: 1.2rem;

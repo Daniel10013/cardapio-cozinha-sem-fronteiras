@@ -60,6 +60,7 @@ function PaginaCliente() {
   const [lojaAberta, setLojaAberta] = useState(true);
   const [carrinho, setCarrinho] = useState({}); // { [pratoId]: { prato, quantidade } }
 
+  const [pratoEscolhendo, setPratoEscolhendo] = useState(null);
   const [modalRevisao, setModalRevisao] = useState(false);
   const [modalFecharConta, setModalFecharConta] = useState(false);
 
@@ -149,16 +150,38 @@ function PaginaCliente() {
       .finally(() => setCarregandoCardapio(false));
   }
 
-  function alterarQuantidade(prato, delta) {
+  // Cada linha do carrinho é um prato + as opções escolhidas (mesmo prato com
+  // opções diferentes vira linhas diferentes).
+  function alterarPorChave(chave, delta) {
     setCarrinho((atual) => {
-      const item = atual[prato.id] || { prato, quantidade: 0 };
-      const quantidade = Math.max(0, item.quantidade + delta);
-      return { ...atual, [prato.id]: { prato, quantidade } };
+      const item = atual[chave];
+      if (!item) return atual;
+      return { ...atual, [chave]: { ...item, quantidade: Math.max(0, item.quantidade + delta) } };
     });
   }
 
+  function alterarQuantidade(prato, delta) {
+    setCarrinho((atual) => {
+      const chave = String(prato.id);
+      const item = atual[chave] || { chave, prato, opcoes: [], precoUnit: Number(prato.preco), quantidade: 0 };
+      return { ...atual, [chave]: { ...item, quantidade: Math.max(0, item.quantidade + delta) } };
+    });
+  }
+
+  function adicionarComOpcoes(prato, opcoes, quantidade) {
+    const chave = `${prato.id}|${opcoes.map((o) => o.id).sort((a, b) => a - b).join(',')}`;
+    const precoUnit = Number(prato.preco) + opcoes.reduce((soma, o) => soma + o.precoAdicional, 0);
+    setCarrinho((atual) => {
+      const item = atual[chave] || { chave, prato, opcoes, precoUnit, quantidade: 0 };
+      return { ...atual, [chave]: { ...item, quantidade: item.quantidade + quantidade } };
+    });
+    setPratoEscolhendo(null);
+  }
+
   const itensCarrinho = Object.values(carrinho).filter((i) => i.quantidade > 0);
-  const totalCarrinho = itensCarrinho.reduce((acc, i) => acc + i.prato.preco * i.quantidade, 0);
+  const totalCarrinho = itensCarrinho.reduce((acc, i) => acc + i.precoUnit * i.quantidade, 0);
+  const quantidadeDoPrato = (pratoId) =>
+    itensCarrinho.filter((i) => i.prato.id === pratoId).reduce((soma, i) => soma + i.quantidade, 0);
 
   function limparCarrinho() {
     setCarrinho({});
@@ -332,15 +355,28 @@ function PaginaCliente() {
                         ) : null}
                         {prato.tempo_preparo ? <div className="tempo-preparo">⏱ {prato.tempo_preparo} min</div> : null}
                       </div>
-                      <div className="qtd-controle">
-                        <button type="button" aria-label="Diminuir" onClick={() => alterarQuantidade(prato, -1)}>
-                          −
-                        </button>
-                        <span>{carrinho[prato.id]?.quantidade || 0}</span>
-                        <button type="button" aria-label="Aumentar" onClick={() => alterarQuantidade(prato, 1)}>
-                          +
-                        </button>
-                      </div>
+                      {prato.grupos && prato.grupos.length > 0 ? (
+                        <div style={{ textAlign: 'center' }}>
+                          <button className="btn-escolher" type="button" onClick={() => setPratoEscolhendo(prato)}>
+                            Escolher
+                          </button>
+                          {quantidadeDoPrato(prato.id) > 0 && (
+                            <div style={{ fontSize: '0.8rem', color: '#a3352b', marginTop: 4 }}>
+                              {quantidadeDoPrato(prato.id)} no pedido
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="qtd-controle">
+                          <button type="button" aria-label="Diminuir" onClick={() => alterarQuantidade(prato, -1)}>
+                            −
+                          </button>
+                          <span>{carrinho[prato.id]?.quantidade || 0}</span>
+                          <button type="button" aria-label="Aumentar" onClick={() => alterarQuantidade(prato, 1)}>
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </section>
@@ -356,9 +392,18 @@ function PaginaCliente() {
             </div>
           )}
 
+          {pratoEscolhendo && (
+            <ModalOpcoes
+              prato={pratoEscolhendo}
+              onFechar={() => setPratoEscolhendo(null)}
+              onAdicionar={adicionarComOpcoes}
+            />
+          )}
+
           {modalRevisao && (
             <ModalRevisarPedido
               itens={itensCarrinho}
+              onAlterar={alterarPorChave}
               total={totalCarrinho}
               modo={modo}
               mesaAtual={mesaAtual}
@@ -377,7 +422,87 @@ function PaginaCliente() {
   );
 }
 
-function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso }) {
+function ModalOpcoes({ prato, onFechar, onAdicionar }) {
+  const [escolhas, setEscolhas] = useState({}); // { [grupoId]: [opcaoId, ...] }
+  const [quantidade, setQuantidade] = useState(1);
+  const [erro, setErro] = useState('');
+
+  function marcar(grupo, opcao) {
+    setErro('');
+    setEscolhas((atual) => {
+      const marcadas = atual[grupo.id] || [];
+      if (grupo.tipo === 'unica') return { ...atual, [grupo.id]: [opcao.id] };
+      return {
+        ...atual,
+        [grupo.id]: marcadas.includes(opcao.id) ? marcadas.filter((id) => id !== opcao.id) : [...marcadas, opcao.id],
+      };
+    });
+  }
+
+  const selecionadas = prato.grupos.flatMap((g) => g.opcoes.filter((o) => (escolhas[g.id] || []).includes(o.id)).map((o) => ({ ...o, grupo: g.nome })));
+  const precoUnit = Number(prato.preco) + selecionadas.reduce((soma, o) => soma + o.precoAdicional, 0);
+
+  function confirmar() {
+    const faltando = prato.grupos.find((g) => g.tipo === 'unica' && !(escolhas[g.id] || []).length);
+    if (faltando) {
+      setErro(`Escolha uma opção de "${faltando.nome}".`);
+      return;
+    }
+    onAdicionar(prato, selecionadas, quantidade);
+  }
+
+  return (
+    <div className="overlay">
+      <div className="modal">
+        <h3>{prato.nome}</h3>
+        {prato.grupos.map((g) => (
+          <div className="grupo-opcoes" key={g.id}>
+            <h4>{g.nome}</h4>
+            <div className="dica">{g.tipo === 'unica' ? 'Escolha 1 (obrigatório)' : 'Opcional — marque quantos quiser (valor à parte)'}</div>
+            {g.opcoes.map((o) => {
+              const marcada = (escolhas[g.id] || []).includes(o.id);
+              return (
+                <label className={'opcao-linha' + (marcada ? ' marcada' : '')} key={o.id}>
+                  <input
+                    type={g.tipo === 'unica' ? 'radio' : 'checkbox'}
+                    name={'grupo-' + g.id}
+                    checked={marcada}
+                    onChange={() => marcar(g, o)}
+                  />
+                  <span className="opcao-nome">{o.nome}</span>
+                  {o.precoAdicional > 0 && <span className="opcao-preco">+ {formatarMoeda(o.precoAdicional)}</span>}
+                </label>
+              );
+            })}
+          </div>
+        ))}
+        <div className="linha-item" style={{ marginTop: 16, alignItems: 'center' }}>
+          <span>Quantidade</span>
+          <div className="qtd-controle">
+            <button type="button" aria-label="Diminuir" onClick={() => setQuantidade((q) => Math.max(1, q - 1))}>
+              −
+            </button>
+            <span>{quantidade}</span>
+            <button type="button" aria-label="Aumentar" onClick={() => setQuantidade((q) => Math.min(99, q + 1))}>
+              +
+            </button>
+          </div>
+        </div>
+        {erro && <div className="erro">{erro}</div>}
+        <div className="acoes">
+          <button className="btn-cancelar" type="button" onClick={onFechar}>
+            Voltar
+          </button>
+          <button className="btn-confirmar" type="button" onClick={confirmar}>
+            Adicionar — {formatarMoeda(precoUnit * quantidade)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso, onAlterar }) {
   const paraLevar = modo === 'levar';
   const [valorCampo, setValorCampo] = useState(paraLevar ? '' : mesaAtual);
   const [observacao, setObservacao] = useState('');
@@ -401,7 +526,7 @@ function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso
         body: JSON.stringify({
           mesa: mesaValor,
           observacao,
-          itens: itens.map((i) => ({ pratoId: i.prato.id, quantidade: i.quantidade })),
+          itens: itens.map((i) => ({ pratoId: i.prato.id, quantidade: i.quantidade, opcoes: i.opcoes.map((o) => o.id) })),
         }),
       });
       const dados = await resp.json();
@@ -441,11 +566,25 @@ function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso
       <div className="modal">
         <h3>Confirmar pedido</h3>
         {itens.map((i) => (
-          <div className="linha-item" key={i.prato.id}>
-            <span>
-              {i.quantidade}x {i.prato.nome}
+          <div className="linha-item" key={i.chave} style={{ alignItems: 'center', gap: 8 }}>
+            <span style={{ flex: 1 }}>
+              {i.prato.nome}
+              {i.opcoes.length > 0 && (
+                <small style={{ display: 'block', color: '#888' }}>
+                  {i.opcoes.map((o) => o.nome).join(' · ')}
+                </small>
+              )}
             </span>
-            <span>{formatarMoeda(i.prato.preco * i.quantidade)}</span>
+            <div className="qtd-controle">
+              <button type="button" aria-label="Diminuir" onClick={() => onAlterar(i.chave, -1)}>
+                −
+              </button>
+              <span>{i.quantidade}</span>
+              <button type="button" aria-label="Aumentar" onClick={() => onAlterar(i.chave, 1)}>
+                +
+              </button>
+            </div>
+            <span style={{ minWidth: 70, textAlign: 'right' }}>{formatarMoeda(i.precoUnit * i.quantidade)}</span>
           </div>
         ))}
         <div
@@ -472,7 +611,7 @@ function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso
           <button className="btn-cancelar" type="button" onClick={onFechar}>
             Voltar
           </button>
-          <button className="btn-confirmar" type="button" disabled={enviando} onClick={enviarPedido}>
+          <button className="btn-confirmar" type="button" disabled={enviando || itens.length === 0} onClick={enviarPedido}>
             {enviando ? 'Enviando...' : 'Enviar pedido'}
           </button>
         </div>
@@ -570,6 +709,7 @@ function ModalFecharConta({ mesaAtual, onFechar }) {
             <div className="linha-item" key={idx}>
               <span>
                 {i.quantidade}x {i.nome}
+                {i.opcoes && <small style={{ display: 'block', color: '#888' }}>{i.opcoes}</small>}
               </span>
               <span>{formatarMoeda(i.subtotal)}</span>
             </div>
@@ -667,6 +807,7 @@ function DetalheComanda({ config, comandaId, mesaUrl, temOutras, onPedirMais, on
                 <div className="linha-item" key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span>
                     {i.quantidade}x {i.nome}
+                    {i.opcoes && <small style={{ display: 'block', color: '#888' }}>{i.opcoes}</small>}
                   </span>
                   <span>{formatarMoeda(i.subtotal)}</span>
                 </div>
