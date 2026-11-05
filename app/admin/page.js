@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 function formatarMoeda(v) {
   return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -257,7 +258,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
         {aba === 'config' && <AbaConfig config={config} onConfigAtualizado={onConfigAtualizado} />}
       </main>
 
-      {reciboHtml && (
+      {reciboHtml && createPortal(
         <div id="recibo-impressao">
           <h2>{reciboHtml.nomeLoja.toUpperCase()}</h2>
           <div className="recibo-subtitulo">
@@ -288,7 +289,8 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
           <div className="recibo-subtitulo" style={{ marginTop: 10 }}>
             Obrigado pela preferência!
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
