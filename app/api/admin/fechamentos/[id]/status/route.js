@@ -12,7 +12,12 @@ export async function PATCH(request, { params }) {
     return Response.json({ erro: 'Status inválido.' }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin().from('csf_fechamentos').update({ status }).eq('id', id);
+  // "Concluído" libera a mesa/comanda para o próximo cliente.
+  const concluidoEm = status === 'concluido' ? new Date().toISOString() : null;
+  const { error } = await supabaseAdmin()
+    .from('csf_fechamentos')
+    .update({ status, concluido_em: concluidoEm })
+    .eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });
 
   return Response.json({ ok: true });

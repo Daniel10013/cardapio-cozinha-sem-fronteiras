@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { calcularTaxaServico } from '@/lib/contas';
+import { calcularTaxaServico, pedidosDaComanda } from '@/lib/contas';
 
 export async function GET(request, { params }) {
   const naoAutenticado = await requireAuth();
@@ -17,17 +17,7 @@ export async function GET(request, { params }) {
   if (erroFechamento) return Response.json({ erro: erroFechamento.message }, { status: 500 });
   if (!fechamento) return Response.json({ erro: 'Fechamento não encontrado.' }, { status: 404 });
 
-  const inicioDoDia = new Date(fechamento.criado_em);
-  inicioDoDia.setHours(0, 0, 0, 0);
-
-  const { data: pedidos, error: erroPedidos } = await db
-    .from('csf_pedidos')
-    .select('id')
-    .eq('mesa', fechamento.mesa)
-    .neq('status', 'cancelado')
-    .gte('criado_em', inicioDoDia.toISOString())
-    .lte('criado_em', fechamento.criado_em);
-  if (erroPedidos) return Response.json({ erro: erroPedidos.message }, { status: 500 });
+  const pedidos = await pedidosDaComanda(fechamento.mesa, fechamento.criado_em);
 
   const idsPedidos = pedidos.map((p) => p.id);
   const { data: itens, error: erroItens } = await db

@@ -72,8 +72,12 @@ create table if not exists csf_fechamentos (
   incluiu_servico boolean not null default true,
   total numeric(10,2) not null,
   status text not null default 'pendente',
-  criado_em timestamptz not null default now()
+  criado_em timestamptz not null default now(),
+  concluido_em timestamptz
 );
+
+-- Para bancos que já tinham csf_fechamentos antes de concluido_em existir
+alter table csf_fechamentos add column if not exists concluido_em timestamptz;
 
 create table if not exists csf_config (
   chave text primary key,

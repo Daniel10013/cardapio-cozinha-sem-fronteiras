@@ -19,12 +19,37 @@ function definirFavicon(url) {
   link.href = url;
 }
 
+const STATUS_ROTULO = {
+  recebido: 'Recebido',
+  'em preparo': 'Em preparo',
+  pronto: 'Pronto',
+  entregue: 'Entregue',
+  cancelado: 'Cancelado',
+};
+
+function lembrarComanda(mesa, id) {
+  try {
+    localStorage.setItem('csf_comanda_' + mesa, id);
+  } catch (e) {
+    /* navegador sem armazenamento */
+  }
+}
+
+function comandaLembrada(mesa) {
+  try {
+    return localStorage.getItem('csf_comanda_' + mesa);
+  } catch (e) {
+    return null;
+  }
+}
+
 function PaginaCliente() {
   const params = useSearchParams();
   const mesaUrl = params.get('mesa') || '';
 
   const [config, setConfig] = useState({ nomeLoja: 'Cozinha Sem Fronteiras', logoUrl: '' });
-  const [tela, setTela] = useState('escolha'); // escolha | comanda | pedido
+  const [tela, setTela] = useState(mesaUrl ? 'carregando' : 'escolha'); // carregando | escolha | mesa | detalhe | comanda | pedido
+  const [comandas, setComandas] = useState([]);
   const [modo, setModo] = useState(null); // local | levar
   const [mesaAtual, setMesaAtual] = useState(mesaUrl);
   const [nomeComanda, setNomeComanda] = useState('');
@@ -49,8 +74,29 @@ function PaginaCliente() {
       .catch(() => {});
   }, []);
 
+  // Ao abrir o QR da mesa: se já há comandas abertas nela, vai direto para elas.
+  useEffect(() => {
+    if (!mesaUrl) return;
+    fetch('/api/mesa?mesa=' + encodeURIComponent(mesaUrl))
+      .then((r) => r.json())
+      .then((dados) => {
+        const lista = dados.comandas || [];
+        setComandas(lista);
+        if (!lista.length) return setTela('escolha');
+        const lembrada = comandaLembrada(mesaUrl);
+        if (lembrada && lista.some((c) => c.id === lembrada)) {
+          setModo('local');
+          setMesaAtual(lembrada);
+          setTela('detalhe');
+        } else {
+          setTela('mesa');
+        }
+      })
+      .catch(() => setTela('escolha'));
+  }, [mesaUrl]);
+
   function escolherLocal() {
-    setTela('comanda');
+    setTela(mesaUrl && comandas.length ? 'mesa' : 'comanda');
   }
 
   function escolherLevar() {
@@ -59,17 +105,33 @@ function PaginaCliente() {
     entrarNoPedido();
   }
 
+  function abrirComanda(id) {
+    setModo('local');
+    setMesaAtual(id);
+    lembrarComanda(mesaUrl, id);
+    setTela('detalhe');
+  }
+
   function escolherComandaJunta() {
     setModo('local');
     setMesaAtual(mesaUrl);
+    if (mesaUrl) lembrarComanda(mesaUrl, mesaUrl);
     entrarNoPedido();
   }
 
   function confirmarComandaSeparada() {
-    const nome = nomeComanda.trim();
+    const nome = nomeComanda.replace(/\s+/g, ' ').trim();
     if (!nome) return alert('Digite seu nome para identificar sua comanda.');
+    const repetido = comandas.some((c) => c.tipo === 'separada' && c.nome.toLowerCase() === nome.toLowerCase());
+    if (repetido) {
+      return alert(
+        `Já existe uma comanda "${nome}" nesta mesa. Se for a sua, volte e toque no seu nome na lista; se for outra pessoa, acrescente uma inicial ou sobrenome (ex: ${nome} S.).`
+      );
+    }
+    const id = mesaUrl ? `${mesaUrl} - ${nome}` : nome;
     setModo('local');
-    setMesaAtual(mesaUrl ? `${mesaUrl} - ${nome}` : nome);
+    setMesaAtual(id);
+    if (mesaUrl) lembrarComanda(mesaUrl, id);
     entrarNoPedido();
   }
 
@@ -127,6 +189,50 @@ function PaginaCliente() {
         </div>
       )}
 
+      {tela === 'carregando' && <div className="vazio">Carregando...</div>}
+
+      {tela === 'mesa' && (
+        <div className="tela-escolha">
+          <h1>Mesa {mesaUrl}</h1>
+          <p>Comandas abertas — toque na sua</p>
+          {comandas.map((c) => (
+            <button className="opcao-escolha" key={c.id} onClick={() => abrirComanda(c.id)} type="button">
+              <span className="icone">{c.tipo === 'junta' ? '🧾' : '🙋'}</span>
+              <span>
+                {c.tipo === 'junta' ? 'Conta da mesa (junta)' : c.nome}
+                <small style={{ display: 'block', fontWeight: 400, color: '#777' }}>
+                  {c.pedidos} {c.pedidos === 1 ? 'pedido' : 'pedidos'}
+                  {c.pendente ? ' · conta solicitada' : ''}
+                </small>
+              </span>
+            </button>
+          ))}
+          <button className="opcao-escolha" onClick={() => setTela('comanda')} type="button">
+            <span className="icone">➕</span>
+            <span>Nova comanda</span>
+          </button>
+          <button
+            className="opcao-escolha"
+            style={{ background: 'transparent', boxShadow: 'none', color: '#fff', fontWeight: 400 }}
+            onClick={() => setTela('escolha')}
+            type="button"
+          >
+            ← Voltar ao início
+          </button>
+        </div>
+      )}
+
+      {tela === 'detalhe' && (
+        <DetalheComanda
+          config={config}
+          comandaId={mesaAtual}
+          mesaUrl={mesaUrl}
+          temOutras={comandas.some((c) => c.id !== mesaAtual)}
+          onPedirMais={entrarNoPedido}
+          onTrocar={() => setTela(comandas.length ? 'mesa' : 'escolha')}
+        />
+      )}
+
       {tela === 'comanda' && (
         <div className="tela-escolha">
           <h1>Comer no local</h1>
@@ -166,7 +272,7 @@ function PaginaCliente() {
             onClick={() => {
               setMostrarFormComanda(false);
               setNomeComanda('');
-              setTela('escolha');
+              setTela(comandas.length ? 'mesa' : 'escolha');
             }}
             type="button"
           >
@@ -184,9 +290,14 @@ function PaginaCliente() {
                 <h1>{config.nomeLoja}</h1>
               </div>
               {modo === 'local' && mesaAtual && (
-                <button className="btn-fechar-conta" onClick={() => setModalFecharConta(true)} type="button">
-                  Fechar conta
-                </button>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn-fechar-conta" onClick={() => setTela('detalhe')} type="button">
+                    Minha conta
+                  </button>
+                  <button className="btn-fechar-conta" onClick={() => setModalFecharConta(true)} type="button">
+                    Fechar conta
+                  </button>
+                </div>
               )}
             </div>
             <div className="mesa">{mesaLabel}</div>
@@ -377,7 +488,7 @@ function ModalFecharConta({ mesaAtual, onFechar }) {
   const [sucesso, setSucesso] = useState(null);
 
   useEffect(() => {
-    fetch('/api/conta?mesa=' + encodeURIComponent(mesaAtual))
+    fetch('/api/comanda?id=' + encodeURIComponent(mesaAtual))
       .then((r) => r.json())
       .then((d) => {
         if (d.erro) throw new Error(d.erro);
@@ -452,7 +563,22 @@ function ModalFecharConta({ mesaAtual, onFechar }) {
     <div className="overlay">
       <div className="modal">
         <h3>Fechar conta — Mesa {mesaAtual}</h3>
-        <div className="linha-item">
+        {dados.pedidos
+          .filter((p) => p.status !== 'cancelado')
+          .flatMap((p) => p.itens)
+          .map((i, idx) => (
+            <div className="linha-item" key={idx}>
+              <span>
+                {i.quantidade}x {i.nome}
+              </span>
+              <span>{formatarMoeda(i.subtotal)}</span>
+            </div>
+          ))}
+        {dados.subtotal <= 0 && <p className="erro">Ainda não há pedidos nesta comanda.</p>}
+        {dados.fechamentoPendente && (
+          <p style={{ color: '#7a5a12' }}>A conta já foi solicitada — a equipe está a caminho.</p>
+        )}
+        <div className="linha-item" style={{ borderTop: '1px solid #eee', paddingTop: 8, marginTop: 8 }}>
           <span>Subtotal dos pedidos</span>
           <span>{formatarMoeda(dados.subtotal)}</span>
         </div>
@@ -469,11 +595,135 @@ function ModalFecharConta({ mesaAtual, onFechar }) {
           <button className="btn-cancelar" type="button" onClick={onFechar}>
             Voltar
           </button>
-          <button className="btn-confirmar" type="button" disabled={enviando} onClick={confirmar}>
+          <button
+            className="btn-confirmar"
+            type="button"
+            disabled={enviando || dados.subtotal <= 0}
+            onClick={confirmar}
+          >
             {enviando ? 'Enviando...' : 'Chamar para fechar'}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DetalheComanda({ config, comandaId, mesaUrl, temOutras, onPedirMais, onTrocar }) {
+  const [dados, setDados] = useState(null);
+  const [erro, setErro] = useState('');
+  const [fechando, setFechando] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    function carregar() {
+      fetch('/api/comanda?id=' + encodeURIComponent(comandaId))
+        .then((r) => r.json())
+        .then((d) => {
+          if (!ativo) return;
+          if (d.erro) throw new Error(d.erro);
+          setDados(d);
+          setErro('');
+        })
+        .catch((err) => ativo && setErro(err.message));
+    }
+    carregar();
+    const intervalo = setInterval(carregar, 10000);
+    return () => {
+      ativo = false;
+      clearInterval(intervalo);
+    };
+  }, [comandaId, fechando]);
+
+  const nome = mesaUrl && comandaId.startsWith(mesaUrl + ' - ') ? comandaId.slice(mesaUrl.length + 3) : '';
+  const titulo = mesaUrl ? (nome ? `Mesa ${mesaUrl} — ${nome}` : `Mesa ${mesaUrl} (conta junta)`) : comandaId;
+
+  return (
+    <div>
+      <header className="topo">
+        <div className="topo-linha">
+          <div className="topo-marca">
+            {config.logoUrl && <img src={config.logoUrl} className="logo-topo" alt="Logo" />}
+            <h1>{config.nomeLoja}</h1>
+          </div>
+        </div>
+        <div className="mesa">{titulo}</div>
+      </header>
+
+      <main>
+        {erro && <p className="erro">{erro}</p>}
+        {!dados && !erro && <div className="vazio">Carregando...</div>}
+        {dados && dados.pedidos.length === 0 && <div className="vazio">Nenhum pedido nesta comanda ainda.</div>}
+        {dados &&
+          dados.pedidos.map((p) => (
+            <div className="prato" key={p.id} style={{ display: 'block', opacity: p.status === 'cancelado' ? 0.5 : 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                <strong>
+                  Pedido {new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </strong>
+                <span style={{ color: '#a3352b', fontWeight: 600 }}>{STATUS_ROTULO[p.status] || p.status}</span>
+              </div>
+              {p.itens.map((i, idx) => (
+                <div className="linha-item" key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>
+                    {i.quantidade}x {i.nome}
+                  </span>
+                  <span>{formatarMoeda(i.subtotal)}</span>
+                </div>
+              ))}
+              {p.observacao && <div style={{ color: '#7a5a12', fontSize: '0.85rem' }}>Obs: {p.observacao}</div>}
+            </div>
+          ))}
+
+        {dados && dados.subtotal > 0 && (
+          <div className="prato" style={{ display: 'block' }}>
+            <div className="linha-item" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Subtotal</span>
+              <span>{formatarMoeda(dados.subtotal)}</span>
+            </div>
+            <div className="linha-item" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Taxa de serviço (10%)</span>
+              <span>{formatarMoeda(dados.taxaServico)}</span>
+            </div>
+            <div className="destaque-total" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Total</span>
+              <span>{formatarMoeda(dados.subtotal + dados.taxaServico)}</span>
+            </div>
+          </div>
+        )}
+
+        {dados && dados.fechamentoPendente && (
+          <div className="aviso-fechado" style={{ borderRadius: 8, marginBottom: 10 }}>
+            Conta solicitada — a equipe está a caminho.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+          <button className="btn-confirmar" style={{ padding: 14, borderRadius: 8, border: 'none', background: '#a3352b', color: '#fff', fontSize: '1rem' }} type="button" onClick={onPedirMais}>
+            Pedir mais
+          </button>
+          <button
+            className="btn-cancelar"
+            style={{ padding: 14, borderRadius: 8, border: 'none', background: '#eee', fontSize: '1rem' }}
+            type="button"
+            disabled={!dados || dados.subtotal <= 0}
+            onClick={() => setFechando(true)}
+          >
+            Fechar conta
+          </button>
+          {temOutras && (
+            <button
+              type="button"
+              onClick={onTrocar}
+              style={{ background: 'none', border: 'none', color: '#a3352b', fontSize: '0.95rem', padding: 8 }}
+            >
+              ← Ver outras comandas da mesa
+            </button>
+          )}
+        </div>
+      </main>
+
+      {fechando && <ModalFecharConta mesaAtual={comandaId} onFechar={() => setFechando(false)} />}
     </div>
   );
 }
