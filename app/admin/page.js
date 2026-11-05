@@ -888,6 +888,14 @@ const SUGESTOES_GRUPO = [
   { nome: 'Pastas', tipo: 'unica' },
   { nome: 'Salada', tipo: 'unica' },
   { nome: 'Adicionais', tipo: 'extra' },
+  {
+    nome: 'Gelo e limão',
+    tipo: 'unica',
+    opcoes: [
+      { nome: 'Com gelo e limão', precoAdicional: '' },
+      { nome: 'Só o copo', precoAdicional: '' },
+    ],
+  },
 ];
 
 function EditorOpcoes({ prato, irmaos, onFechar }) {
@@ -943,11 +951,23 @@ function EditorOpcoes({ prato, irmaos, onFechar }) {
     }
   }
 
-  async function salvar() {
+  async function salvar(paraTodos = false) {
+    if (
+      paraTodos &&
+      !confirm(
+        `Isso salva estas opções em "${prato.nome}" e também em TODOS os outros pratos desta categoria (${outros.length}), trocando as opções que eles já têm. Continuar?`,
+      )
+    ) {
+      return;
+    }
     setSalvando(true);
     try {
-      await api('/pratos/' + prato.id + '/opcoes', { method: 'PUT', body: JSON.stringify({ grupos }) });
-      onFechar(true);
+      const corpo = JSON.stringify({ grupos });
+      await api('/pratos/' + prato.id + '/opcoes', { method: 'PUT', body: corpo });
+      if (paraTodos) {
+        for (const p of outros) await api('/pratos/' + p.id + '/opcoes', { method: 'PUT', body: corpo });
+      }
+      onFechar(paraTodos ? 'todos' : true);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -1034,7 +1054,9 @@ function EditorOpcoes({ prato, irmaos, onFechar }) {
             className="btn-secundario"
             type="button"
             style={{ marginRight: 6, marginBottom: 4 }}
-            onClick={() => setGrupos((atual) => [...atual, { ...s, opcoes: [novaOpcao()] }])}
+            onClick={() =>
+              setGrupos((atual) => [...atual, { ...s, opcoes: s.opcoes ? s.opcoes.map((o) => ({ ...o })) : [novaOpcao()] }])
+            }
           >
             + {s.nome}
           </button>
@@ -1066,9 +1088,14 @@ function EditorOpcoes({ prato, irmaos, onFechar }) {
       )}
 
       <div className="linha-form" style={{ marginBottom: 0 }}>
-        <button className="btn" type="button" onClick={salvar} disabled={salvando}>
+        <button className="btn" type="button" onClick={() => salvar(false)} disabled={salvando}>
           {salvando ? 'Salvando...' : 'Salvar opções'}
         </button>
+        {outros.length > 0 && (
+          <button className="btn-secundario" type="button" onClick={() => salvar(true)} disabled={salvando}>
+            Salvar e aplicar a todos desta categoria
+          </button>
+        )}
         <button className="btn-secundario" type="button" onClick={() => onFechar()}>
           Cancelar
         </button>
@@ -1213,7 +1240,8 @@ function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar }) {
         irmaos={irmaos}
         onFechar={(salvou) => {
           setEditandoOpcoes(false);
-          if (salvou) alert('Opções salvas!');
+          if (salvou === 'todos') alert('Opções salvas neste prato e em todos da categoria!');
+          else if (salvou) alert('Opções salvas!');
         }}
       />
     )}
