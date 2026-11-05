@@ -215,6 +215,21 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
     return () => window.removeEventListener('afterprint', limpar);
   }, [reciboHtml]);
 
+  async function fecharContaManual(mesa) {
+    try {
+      const r = await api('/fechamentos', { method: 'POST', body: JSON.stringify({ mesa }) });
+      carregarFechamentos();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (r.jaSolicitado) {
+        alert(`A conta de "${mesa}" já está em "Contas para fechar" (${formatarMoeda(r.total)}).`);
+      } else if (confirm(`Conta de "${mesa}" criada: ${formatarMoeda(r.total)} (com 10% de serviço).\n\nImprimir agora?`)) {
+        imprimirConta(r.id);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function concluirFechamento(id) {
     await api(`/fechamentos/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'concluido' }) });
     carregarFechamentos();
@@ -258,6 +273,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
             fechamentosPendentes={fechamentosPendentes}
             onImprimirConta={imprimirConta}
             onConcluirFechamento={concluirFechamento}
+            onFecharConta={fecharContaManual}
             gatilhoAtualizacao={gatilhoAtualizacao}
           />
         )}
@@ -311,7 +327,7 @@ function formatarMesLabel(m) {
   return `${nomes[Number(mes) - 1]}/${ano}`;
 }
 
-function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechamento, gatilhoAtualizacao }) {
+function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechamento, onFecharConta, gatilhoAtualizacao }) {
   const [meses, setMeses] = useState([]);
   const [mes, setMes] = useState('');
   const [pedidos, setPedidos] = useState([]);
@@ -406,12 +422,13 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
               <th>Itens</th>
               <th>Total</th>
               <th>Status</th>
+              <th>Conta</th>
             </tr>
           </thead>
           <tbody>
             {pedidos.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', color: '#888' }}>
+                <td colSpan={6} style={{ textAlign: 'center', color: '#888' }}>
                   Nenhum pedido neste mês.
                 </td>
               </tr>
@@ -447,10 +464,17 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                         ))}
                       </select>
                     </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {p.status !== 'cancelado' && p.mesa && (
+                        <button className="btn-secundario" onClick={() => onFecharConta(p.mesa)} type="button">
+                          Fechar conta
+                        </button>
+                      )}
+                    </td>
                   </tr>
                   {aberto && (
                     <tr style={{ background: '#faf7f2' }}>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         {p.itens.map((i) => (
                           <div
                             key={i.id}
