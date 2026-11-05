@@ -326,7 +326,7 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
 
   useEffect(() => {
     api('/pedidos/meses-disponiveis').then((disponiveis) => {
-      const mesAtual = new Date().toISOString().slice(0, 7);
+      const mesAtual = diaBR(new Date().toISOString()).slice(0, 7);
       const lista = disponiveis.includes(mesAtual) ? disponiveis : [mesAtual, ...disponiveis];
       setMeses(lista);
       setMes(mesAtual);
@@ -489,14 +489,21 @@ function formatarDiaLabel(diaIso) {
   return `${dia}/${mes} (${nomesDias[dataObj.getDay()]})`;
 }
 
+// Dia (YYYY-MM-DD) no horário de Brasília — igual ao usado no servidor (lib/datas.js).
+function diaBR(iso) {
+  return new Date(new Date(iso).getTime() - 3 * 3600000).toISOString().slice(0, 10);
+}
+
 function AbaRelatorio({ gatilhoAtualizacao }) {
   const [meses, setMeses] = useState([]);
   const [mes, setMes] = useState('');
   const [resumo, setResumo] = useState({ totalPedidos: 0, faturamento: 0, porDia: [] });
+  const [pedidosDoMes, setPedidosDoMes] = useState([]);
+  const [diaAberto, setDiaAberto] = useState(null);
 
   useEffect(() => {
     api('/pedidos/meses-disponiveis').then((disponiveis) => {
-      const mesAtual = new Date().toISOString().slice(0, 7);
+      const mesAtual = diaBR(new Date().toISOString()).slice(0, 7);
       const lista = disponiveis.includes(mesAtual) ? disponiveis : [mesAtual, ...disponiveis];
       setMeses(lista);
       setMes(mesAtual);
@@ -506,7 +513,12 @@ function AbaRelatorio({ gatilhoAtualizacao }) {
   useEffect(() => {
     if (!mes) return;
     api('/resumo?mes=' + mes).then(setResumo);
+    api('/pedidos?mes=' + mes).then(setPedidosDoMes);
   }, [mes, gatilhoAtualizacao]);
+
+  useEffect(() => {
+    setDiaAberto(null);
+  }, [mes]);
 
   const ticketMedio = resumo.totalPedidos > 0 ? resumo.faturamento / resumo.totalPedidos : 0;
   const maiorFaturamento = Math.max(0, ...resumo.porDia.map((d) => d.faturamento));
@@ -546,16 +558,58 @@ function AbaRelatorio({ gatilhoAtualizacao }) {
           .reverse()
           .map((d) => {
             const largura = maiorFaturamento > 0 ? Math.round((d.faturamento / maiorFaturamento) * 100) : 0;
+            const aberto = diaAberto === d.dia;
+            const pedidosDoDia = pedidosDoMes
+              .filter((p) => p.status !== 'cancelado' && diaBR(p.criado_em) === d.dia)
+              .sort((a, b) => a.criado_em.localeCompare(b.criado_em));
             return (
-              <div className="dia-linha" key={d.dia}>
-                <div className="dia-data">{formatarDiaLabel(d.dia)}</div>
-                <div className="dia-barra-fundo">
-                  <div className="dia-barra" style={{ width: largura + '%' }} />
+              <Fragment key={d.dia}>
+                <div
+                  className="dia-linha"
+                  onClick={() => setDiaAberto(aberto ? null : d.dia)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="dia-data">
+                    {aberto ? '▾' : '▸'} {formatarDiaLabel(d.dia)}
+                  </div>
+                  <div className="dia-barra-fundo">
+                    <div className="dia-barra" style={{ width: largura + '%' }} />
+                  </div>
+                  <div className="dia-valores">
+                    {formatarMoeda(d.faturamento)} · {d.pedidos} pedido{d.pedidos === 1 ? '' : 's'}
+                  </div>
                 </div>
-                <div className="dia-valores">
-                  {formatarMoeda(d.faturamento)} · {d.pedidos} pedido{d.pedidos === 1 ? '' : 's'}
-                </div>
-              </div>
+                {aberto && (
+                  <div style={{ background: '#faf7f2', borderRadius: 8, padding: '6px 12px', margin: '4px 0 10px' }}>
+                    {pedidosDoDia.length === 0 && <p style={{ color: '#888' }}>Carregando pedidos...</p>}
+                    {pedidosDoDia.map((p) => (
+                      <div key={p.id} style={{ padding: '8px 0', borderBottom: '1px solid #eee' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span>
+                            <strong>
+                              {new Date(p.criado_em).toLocaleTimeString('pt-BR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </strong>{' '}
+                            — {p.mesa || 'sem mesa'}
+                          </span>
+                          <span>
+                            <strong>{formatarMoeda(p.total)}</strong>{' '}
+                            <span style={{ color: '#888', fontSize: '0.8rem' }}>({p.status})</span>
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#555' }}>
+                          {p.itens.map((i) => `${i.quantidade}x ${i.nome_prato}`).join(', ')}
+                        </div>
+                        {p.observacao && (
+                          <div style={{ fontSize: '0.85rem', color: '#7a5a12' }}>Obs: {p.observacao}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Fragment>
             );
           })}
       </div>

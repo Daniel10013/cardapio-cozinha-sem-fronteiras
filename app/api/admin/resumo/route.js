@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { diaBR, limitesMesBR, mesValido } from '@/lib/datas';
 
 export async function GET(request) {
   const naoAutenticado = await requireAuth();
@@ -7,14 +8,14 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const mes = searchParams.get('mes');
+  if (mes && !mesValido(mes)) return Response.json({ erro: 'Mês inválido.' }, { status: 400 });
   const db = supabaseAdmin();
 
-  let query = db.from('csf_pedidos').select('total, criado_em');
+  // Pedidos cancelados não entram no faturamento nem na contagem.
+  let query = db.from('csf_pedidos').select('total, criado_em').neq('status', 'cancelado');
   if (mes) {
-    const inicio = `${mes}-01T00:00:00.000Z`;
-    const [ano, mesNum] = mes.split('-').map(Number);
-    const proximoMes = new Date(Date.UTC(ano, mesNum, 1)).toISOString();
-    query = query.gte('criado_em', inicio).lt('criado_em', proximoMes);
+    const { inicio, fim } = limitesMesBR(mes);
+    query = query.gte('criado_em', inicio).lt('criado_em', fim);
   }
 
   const { data: pedidos, error } = await query;
@@ -25,7 +26,7 @@ export async function GET(request) {
 
   const porDiaMap = new Map();
   for (const p of pedidos) {
-    const dia = p.criado_em.slice(0, 10);
+    const dia = diaBR(p.criado_em);
     const atual = porDiaMap.get(dia) || { dia, pedidos: 0, faturamento: 0 };
     atual.pedidos += 1;
     atual.faturamento += Number(p.total);

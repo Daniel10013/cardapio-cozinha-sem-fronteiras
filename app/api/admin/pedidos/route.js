@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { limitesMesBR, mesValido } from '@/lib/datas';
 
 export async function GET(request) {
   const naoAutenticado = await requireAuth();
@@ -11,10 +12,9 @@ export async function GET(request) {
 
   let query = db.from('csf_pedidos').select('*').order('criado_em', { ascending: false });
   if (mes) {
-    const inicio = `${mes}-01T00:00:00.000Z`;
-    const [ano, mesNum] = mes.split('-').map(Number);
-    const proximoMes = new Date(Date.UTC(ano, mesNum, 1)).toISOString();
-    query = query.gte('criado_em', inicio).lt('criado_em', proximoMes);
+    if (!mesValido(mes)) return Response.json({ erro: 'Mês inválido.' }, { status: 400 });
+    const { inicio, fim } = limitesMesBR(mes);
+    query = query.gte('criado_em', inicio).lt('criado_em', fim);
   } else {
     query = query.limit(200);
   }
