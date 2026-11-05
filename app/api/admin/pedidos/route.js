@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { limitesMesBR, mesValido } from '@/lib/datas';
+import { porcoesDosPratos } from '@/lib/opcoes';
 
 export async function GET(request) {
   const naoAutenticado = await requireAuth();
@@ -29,6 +30,14 @@ export async function GET(request) {
     .in('pedido_id', idsPedidos.length ? idsPedidos : [0]);
   if (erroItens) return Response.json({ erro: erroItens.message }, { status: 500 });
 
-  const comItens = pedidos.map((p) => ({ ...p, itens: itens.filter((i) => i.pedido_id === p.id) }));
+  let porcoes = {};
+  try {
+    porcoes = await porcoesDosPratos(itens.map((i) => i.prato_id));
+  } catch {}
+
+  const comItens = pedidos.map((p) => ({
+    ...p,
+    itens: itens.filter((i) => i.pedido_id === p.id).map((i) => ({ ...i, porcao: porcoes[i.prato_id] || '' })),
+  }));
   return Response.json(comItens);
 }

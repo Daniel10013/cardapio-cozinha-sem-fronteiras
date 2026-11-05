@@ -214,7 +214,12 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
       mesa: pedido.mesa || '-',
       hora,
       observacao: pedido.observacao,
-      itens: pedido.itens.map((i) => ({ quantidade: i.quantidade, nome: i.nome_prato, opcoes: i.opcoes })),
+      itens: pedido.itens.map((i) => ({
+        quantidade: i.quantidade,
+        nome: i.nome_prato,
+        porcao: i.porcao,
+        opcoes: i.opcoes,
+      })),
     });
   }
 
@@ -308,6 +313,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
             <div className="recibo-cozinha-item" key={idx}>
               <strong>
                 {i.quantidade}x {i.nome}
+                {i.porcao ? ` (${i.porcao})` : ''}
               </strong>
               {i.opcoes && <div className="recibo-cozinha-opcoes">{i.opcoes.split(' · ').map((o, k) => <div key={k}>• {o}</div>)}</div>}
             </div>
@@ -333,6 +339,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
             <div className="recibo-item" key={idx}>
               <span>
                 {i.quantidade}x {i.nome}
+                {i.porcao ? ` (${i.porcao})` : ''}
                 {i.opcoes && <small style={{ display: 'block', fontSize: '0.85em' }}>{i.opcoes}</small>}
               </span>
               <span>{formatarMoeda(i.subtotal)}</span>
@@ -556,6 +563,7 @@ function AbaPedidos({
                           >
                             <span>
                               <strong>{i.quantidade}x</strong> {i.nome_prato}
+                              {i.porcao ? ` (${i.porcao})` : ''}
                               {i.opcoes && <div style={{ color: '#7a5a12', fontSize: '0.85rem' }}>{i.opcoes}</div>}
                             </span>
                             <span style={{ color: '#555' }}>
