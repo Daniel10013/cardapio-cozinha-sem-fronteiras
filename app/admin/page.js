@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 
 function formatarMoeda(v) {
   return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -305,6 +305,7 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
   const [mes, setMes] = useState('');
   const [pedidos, setPedidos] = useState([]);
   const [resumo, setResumo] = useState({ totalPedidos: 0, faturamento: 0 });
+  const [expandidoId, setExpandidoId] = useState(null);
 
   const carregarPedidos = useCallback((mesAtual) => {
     if (!mesAtual) return;
@@ -411,23 +412,56 @@ function AbaPedidos({ fechamentosPendentes, onImprimirConta, onConcluirFechament
                 hour: '2-digit',
                 minute: '2-digit',
               });
-              const itensTxt = p.itens.map((i) => `${i.quantidade}x ${i.nome_prato}`).join(', ');
+              const aberto = expandidoId === p.id;
+              const totalItens = p.itens.reduce((soma, i) => soma + i.quantidade, 0);
               return (
-                <tr key={p.id}>
-                  <td>{hora}</td>
-                  <td>{p.mesa || '-'}</td>
-                  <td>{itensTxt}</td>
-                  <td>{formatarMoeda(p.total)}</td>
-                  <td>
-                    <select value={p.status} onChange={(e) => alterarStatus(p.id, e.target.value)}>
-                      {['recebido', 'em preparo', 'pronto', 'entregue', 'cancelado'].map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
+                <Fragment key={p.id}>
+                  <tr
+                    onClick={() => setExpandidoId(aberto ? null : p.id)}
+                    style={{ cursor: 'pointer', background: aberto ? '#faf7f2' : undefined }}
+                  >
+                    <td>{hora}</td>
+                    <td>{p.mesa || '-'}</td>
+                    <td>
+                      {aberto ? '▾' : '▸'} {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+                      <span style={{ color: '#888' }}> — clique para ver</span>
+                    </td>
+                    <td>{formatarMoeda(p.total)}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <select value={p.status} onChange={(e) => alterarStatus(p.id, e.target.value)}>
+                        {['recebido', 'em preparo', 'pronto', 'entregue', 'cancelado'].map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                  {aberto && (
+                    <tr style={{ background: '#faf7f2' }}>
+                      <td colSpan={5}>
+                        {p.itens.map((i) => (
+                          <div
+                            key={i.id}
+                            style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}
+                          >
+                            <span>
+                              <strong>{i.quantidade}x</strong> {i.nome_prato}
+                            </span>
+                            <span style={{ color: '#555' }}>
+                              {formatarMoeda(i.preco_unitario)} cada — <strong>{formatarMoeda(i.subtotal)}</strong>
+                            </span>
+                          </div>
+                        ))}
+                        {p.observacao && (
+                          <div style={{ marginTop: 6, color: '#7a5a12' }}>
+                            <strong>Observação:</strong> {p.observacao}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
