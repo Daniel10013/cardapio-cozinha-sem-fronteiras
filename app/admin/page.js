@@ -673,27 +673,30 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
 function PratoLinha({ prato, onAtualizar }) {
   const inputFotoRef = useRef(null);
 
-  async function editarPreco() {
-    const novoPreco = prompt('Novo preço:', prato.preco);
-    if (novoPreco === null) return;
-    await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify({ preco: novoPreco }) });
-    onAtualizar();
+  const [editando, setEditando] = useState(false);
+  const [form, setForm] = useState({});
+
+  function abrirEdicao() {
+    setForm({
+      nome: prato.nome,
+      descricao: prato.descricao || '',
+      preco: String(prato.preco),
+      tempoPreparo: String(prato.tempo_preparo || 0),
+      peso: prato.peso || '',
+      quantidade: prato.quantidade || '',
+    });
+    setEditando(true);
   }
 
-  async function editarTempo() {
-    const novoTempo = prompt('Tempo de preparo (em minutos):', prato.tempo_preparo || 0);
-    if (novoTempo === null) return;
-    await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify({ tempoPreparo: novoTempo }) });
-    onAtualizar();
-  }
-
-  async function editarPesoQuantidade() {
-    const novoPeso = prompt('Peso (ex: 300g, 1kg — deixe vazio para remover):', prato.peso || '');
-    if (novoPeso === null) return;
-    const novaQtd = prompt('Quantidade (ex: 6 unidades, 2 pessoas — deixe vazio para remover):', prato.quantidade || '');
-    if (novaQtd === null) return;
-    await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify({ peso: novoPeso, quantidade: novaQtd }) });
-    onAtualizar();
+  async function salvarEdicao() {
+    if (!form.nome.trim() || form.preco === '') return alert('Preencha nome e preço do prato.');
+    try {
+      await api('/pratos/' + prato.id, { method: 'PATCH', body: JSON.stringify(form) });
+      setEditando(false);
+      onAtualizar();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   async function alternarAtivo() {
@@ -729,6 +732,36 @@ function PratoLinha({ prato, onAtualizar }) {
     onAtualizar();
   }
 
+  if (editando) {
+    const campo = (chave, placeholder, extra = {}) => (
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={form[chave]}
+        onChange={(e) => setForm({ ...form, [chave]: e.target.value })}
+        {...extra}
+      />
+    );
+    return (
+      <div className="prato-linha" style={{ background: '#faf7f2', padding: 10, borderRadius: 8 }}>
+        <div className="linha-form" style={{ width: '100%', marginBottom: 0 }}>
+          {campo('nome', 'Nome do prato')}
+          {campo('descricao', 'Descrição (opcional)')}
+          {campo('preco', 'Preço', { type: 'number', step: '0.01', style: { maxWidth: 100 } })}
+          {campo('tempoPreparo', 'Preparo (min)', { type: 'number', min: '0', style: { maxWidth: 120 } })}
+          {campo('peso', 'Peso (ex: 300g)', { style: { maxWidth: 130 } })}
+          {campo('quantidade', 'Qtd (ex: 6 unid.)', { style: { maxWidth: 130 } })}
+          <button className="btn" onClick={salvarEdicao} type="button">
+            Salvar
+          </button>
+          <button className="btn-secundario" onClick={() => setEditando(false)} type="button">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={'prato-linha' + (prato.ativo ? '' : ' inativo')}>
       {prato.foto ? (
@@ -752,14 +785,8 @@ function PratoLinha({ prato, onAtualizar }) {
           Remover foto
         </button>
       )}
-      <button className="btn-secundario" onClick={editarPreco} type="button">
-        Preço
-      </button>
-      <button className="btn-secundario" onClick={editarTempo} type="button">
-        Tempo
-      </button>
-      <button className="btn-secundario" onClick={editarPesoQuantidade} type="button">
-        Peso/Qtd
+      <button className="btn-secundario" onClick={abrirEdicao} type="button">
+        Editar
       </button>
       <button className="btn-secundario" onClick={alternarAtivo} type="button">
         {prato.ativo ? 'Desativar' : 'Ativar'}
