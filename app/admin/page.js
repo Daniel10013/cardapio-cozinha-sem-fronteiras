@@ -89,24 +89,33 @@ function TelaLogin({ config, onLogin }) {
   );
 }
 
-function tocarTom(frequencias) {
+function tocarTom(frequencias, { tipo = 'sine', volume = 0.4, duracao = 0.3 } = {}) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
     frequencias.forEach(([freq, atraso]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
+      osc.type = tipo;
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0.0001, ctx.currentTime + atraso);
-      gain.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + atraso + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + atraso + 0.3);
+      gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + atraso + 0.02);
+      gain.gain.setValueAtTime(volume, ctx.currentTime + atraso + duracao - 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + atraso + duracao);
       osc.connect(gain).connect(ctx.destination);
       osc.start(ctx.currentTime + atraso);
-      osc.stop(ctx.currentTime + atraso + 0.32);
+      osc.stop(ctx.currentTime + atraso + duracao + 0.02);
     });
   } catch (e) {
     /* navegador sem suporte a áudio */
   }
+}
+
+// Alarme de pedido novo: sirene alternando dois tons, ~6 segundos, volume máximo.
+function tocarAlarmePedido() {
+  const notas = [];
+  for (let i = 0; i < 16; i++) notas.push([i % 2 === 0 ? 880 : 1175, i * 0.38]);
+  tocarTom(notas, { tipo: 'square', volume: 1, duracao: 0.36 });
 }
 
 function Painel({ config, onLogout, onConfigAtualizado }) {
@@ -141,7 +150,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
         if (ultimoIdPedido.current === null) {
           ultimoIdPedido.current = ultimoId;
         } else if (ultimoId > ultimoIdPedido.current) {
-          tocarTom([[880, 0], [880, 0.18]]);
+          tocarAlarmePedido();
           if (window.Notification && Notification.permission === 'granted') {
             const qtd = ultimoId - ultimoIdPedido.current;
             new Notification('Novo pedido recebido!', {
