@@ -228,10 +228,21 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
   useEffect(() => {
     if (!reciboHtml) return;
     document.body.classList.add('imprimindo-recibo');
-    // Papel da impressora térmica: 50mm de largura, comprimento automático
-    // (tamanhos fixos de altura deslocavam o cupom no papel desta impressora).
+    // Papel da impressora térmica: 50mm de largura. A altura da página é medida pelo
+    // próprio cupom: com "auto" o navegador usa uma página curta e corta o final.
+    // O texto fica com 44mm de largura (+2mm à esquerda): é o que cabe na área
+    // impressa desta impressora sem cortar a direita. Margem 0 = sem cabeçalho do navegador.
+    let alturaMm = 150;
+    const recibo = document.getElementById('recibo-impressao');
+    if (recibo) {
+      const anterior = recibo.getAttribute('style');
+      recibo.style.cssText = 'display:block;position:absolute;visibility:hidden;width:44mm;margin:0;padding:0;';
+      alturaMm = Math.ceil((recibo.getBoundingClientRect().height * 25.4) / 96) + 10;
+      if (anterior === null) recibo.removeAttribute('style');
+      else recibo.setAttribute('style', anterior);
+    }
     const estilo = document.createElement('style');
-    estilo.textContent = '@page { size: 50mm auto; margin: 2mm; }';
+    estilo.textContent = `@page { size: 50mm ${alturaMm}mm; margin: 0; }`;
     document.head.appendChild(estilo);
     window.print();
     const limpar = () => {
