@@ -214,7 +214,9 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
       mesa: pedido.mesa || '-',
       hora,
       observacao: pedido.observacao,
-      itens: pedido.itens.map((i) => ({
+      itens: [...pedido.itens]
+        .sort((a, b) => a.id - b.id)
+        .map((i) => ({
         quantidade: i.quantidade,
         nome: i.nome_prato,
         porcao: i.porcao,

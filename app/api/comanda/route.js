@@ -16,7 +16,8 @@ export async function GET(request) {
     const { data, error } = await db
       .from('csf_itens_pedido')
       .select('pedido_id, nome_prato, opcoes, quantidade, preco_unitario, subtotal')
-      .in('pedido_id', ids);
+      .in('pedido_id', ids)
+      .order('id');
     if (error) return Response.json({ erro: error.message }, { status: 500 });
     itens = data;
   }

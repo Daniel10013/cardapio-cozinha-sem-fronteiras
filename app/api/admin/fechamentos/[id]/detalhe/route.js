@@ -24,7 +24,8 @@ export async function GET(request, { params }) {
   const { data: itens, error: erroItens } = await db
     .from('csf_itens_pedido')
     .select('prato_id, nome_prato, opcoes, preco_unitario, quantidade, subtotal')
-    .in('pedido_id', idsPedidos.length ? idsPedidos : [0]);
+    .in('pedido_id', idsPedidos.length ? idsPedidos : [0])
+    .order('id');
   if (erroItens) return Response.json({ erro: erroItens.message }, { status: 500 });
 
   let porcoes = {};
