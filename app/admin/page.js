@@ -226,10 +226,20 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
   useEffect(() => {
     if (!reciboHtml) return;
     document.body.classList.add('imprimindo-recibo');
+    // Papel da impressora térmica: 50mm de largura, comprimento automático
+    const estilo = document.createElement('style');
+    estilo.textContent = '@page { size: 50mm auto; margin: 2mm; }';
+    document.head.appendChild(estilo);
     window.print();
-    const limpar = () => document.body.classList.remove('imprimindo-recibo');
+    const limpar = () => {
+      document.body.classList.remove('imprimindo-recibo');
+      estilo.remove();
+    };
     window.addEventListener('afterprint', limpar, { once: true });
-    return () => window.removeEventListener('afterprint', limpar);
+    return () => {
+      window.removeEventListener('afterprint', limpar);
+      limpar();
+    };
   }, [reciboHtml]);
 
   async function fecharContaManual(mesa) {

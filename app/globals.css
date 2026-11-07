@@ -470,7 +470,22 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
   .qr-grid.imprimindo-um .qr-item.selecionado-impressao { display: block; }
 
   body.imprimindo-recibo > *:not(#recibo-impressao) { display: none !important; }
-  body.imprimindo-recibo #recibo-impressao { display: block !important; width: 72mm; margin: 0; padding: 4px; }
-  body.imprimindo-recibo { width: 72mm; }
-  @page { size: 80mm auto; margin: 4mm; }
+  /* Impressora térmica de 50mm: a página (@page) é definida por JS só na hora de imprimir o recibo */
+  body.imprimindo-recibo #recibo-impressao { display: block !important; width: 46mm; margin: 0; padding: 0; }
+  body.imprimindo-recibo { width: 46mm; margin: 0; padding: 0; }
 }
+
+/* Recibo estreito (50mm): textos longos quebram em linhas, preço sempre à direita */
+#recibo-impressao { font-size: 11px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+#recibo-impressao h2 { font-size: 13px; }
+#recibo-impressao .recibo-subtitulo { font-size: 10px; color: #000; }
+#recibo-impressao .recibo-item,
+#recibo-impressao .recibo-total-linha { font-size: 11px; gap: 4px; }
+#recibo-impressao .recibo-item > span:first-child { flex: 1; min-width: 0; }
+#recibo-impressao .recibo-item > span:last-child,
+#recibo-impressao .recibo-total-linha > span:last-child { white-space: nowrap; }
+#recibo-impressao .recibo-item small { font-weight: 400; font-size: 10px; }
+#recibo-impressao .recibo-mesa { font-size: 18px; }
+#recibo-impressao .recibo-cozinha-item { font-size: 13px; }
+#recibo-impressao .recibo-cozinha-opcoes { font-size: 11px; font-weight: 400; }
+#recibo-impressao .recibo-cozinha-obs { font-size: 12px; }
