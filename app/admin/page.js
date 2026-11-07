@@ -228,9 +228,19 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
   useEffect(() => {
     if (!reciboHtml) return;
     document.body.classList.add('imprimindo-recibo');
-    // Papel da impressora térmica: 50mm de largura, comprimento automático
+    // Papel da impressora térmica: 50mm de largura. O comprimento é medido do próprio
+    // conteúdo, porque "auto" não é respeitado e o cupom era cortado no meio.
+    let alturaMm = 120;
+    const recibo = document.getElementById('recibo-impressao');
+    if (recibo) {
+      const anterior = recibo.getAttribute('style');
+      recibo.style.cssText = 'display:block;position:absolute;visibility:hidden;width:46mm;padding:0;margin:0;';
+      alturaMm = Math.ceil((recibo.getBoundingClientRect().height * 25.4) / 96) + 12;
+      if (anterior === null) recibo.removeAttribute('style');
+      else recibo.setAttribute('style', anterior);
+    }
     const estilo = document.createElement('style');
-    estilo.textContent = '@page { size: 50mm auto; margin: 2mm; }';
+    estilo.textContent = `@page { size: 50mm ${alturaMm}mm; margin: 2mm; }`;
     document.head.appendChild(estilo);
     window.print();
     const limpar = () => {
