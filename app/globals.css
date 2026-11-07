@@ -494,7 +494,8 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
 #recibo-impressao .recibo-item > span:last-child,
 #recibo-impressao .recibo-total-linha > span:last-child { white-space: nowrap; }
 #recibo-impressao .recibo-item small { font-weight: 600; font-size: 11px; }
-#recibo-impressao .recibo-mesa { font-size: 20px; font-weight: 800; }
-#recibo-impressao .recibo-cozinha-item { font-size: 14px; padding: 4px 0; }
-#recibo-impressao .recibo-cozinha-opcoes { font-size: 12px; font-weight: 600; }
+#recibo-impressao .recibo-mesa { font-size: 20px; font-weight: 800; line-height: 1.1; margin: 2px 0; }
+#recibo-impressao .recibo-cozinha-item { font-size: 14px; padding: 2px 0; }
+#recibo-impressao .recibo-cozinha-opcoes { font-size: 13px; font-weight: 600; line-height: 1.15; margin-top: 0; }
+#recibo-impressao .recibo-cozinha .recibo-subtitulo { margin-bottom: 2px; }
 #recibo-impressao .recibo-cozinha-obs { font-size: 13px; font-weight: 800; }

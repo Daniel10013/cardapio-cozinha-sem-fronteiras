@@ -328,7 +328,17 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
                 {i.quantidade}x {i.nome}
                 {i.porcao ? ` (${i.porcao})` : ''}
               </strong>
-              {i.opcoes && <div className="recibo-cozinha-opcoes">{i.opcoes.split(' · ').map((o, k) => <div key={k}>• {o}</div>)}</div>}
+              {i.opcoes && (
+                <div className="recibo-cozinha-opcoes">
+                  {i.opcoes.split(' · ').map((o, k) => {
+                    // "Arroz: Arroz branco" -> "• Arroz branco" (o nome do grupo só fica nos adicionais)
+                    const [grupo, ...resto] = o.split(': ');
+                    const valor = resto.join(': ');
+                    const extra = /adicion|extra/i.test(grupo);
+                    return <div key={k}>• {valor ? (extra ? `+ ${valor}` : valor) : o}</div>;
+                  })}
+                </div>
+              )}
             </div>
           ))}
           {reciboHtml.observacao && (
