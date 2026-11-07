@@ -162,7 +162,8 @@ function PaginaCliente() {
 
   function alterarQuantidade(prato, delta) {
     setCarrinho((atual) => {
-      const chave = String(prato.id);
+      // prefixo "p": chaves só com números fariam o JavaScript reordenar o carrinho pelo id
+      const chave = `p${prato.id}`;
       const item = atual[chave] || { chave, prato, opcoes: [], precoUnit: Number(prato.preco), quantidade: 0 };
       return { ...atual, [chave]: { ...item, quantidade: Math.max(0, item.quantidade + delta) } };
     });
@@ -371,7 +372,7 @@ function PaginaCliente() {
                           <button type="button" aria-label="Diminuir" onClick={() => alterarQuantidade(prato, -1)}>
                             −
                           </button>
-                          <span>{carrinho[prato.id]?.quantidade || 0}</span>
+                          <span>{carrinho[`p${prato.id}`]?.quantidade || 0}</span>
                           <button type="button" aria-label="Aumentar" onClick={() => alterarQuantidade(prato, 1)}>
                             +
                           </button>
