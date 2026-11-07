@@ -476,16 +476,25 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
 }
 
 /* Recibo estreito (50mm): textos longos quebram em linhas, preço sempre à direita */
-#recibo-impressao { font-size: 11px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
-#recibo-impressao h2 { font-size: 13px; }
-#recibo-impressao .recibo-subtitulo { font-size: 10px; color: #000; }
+#recibo-impressao {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #000;
+  overflow-wrap: anywhere;
+}
+#recibo-impressao h2 { font-size: 18px; font-weight: 800; }
+#recibo-impressao .recibo-subtitulo { font-size: 14px; color: #000; }
+#recibo-impressao .recibo-linha-sep { border-top: 2px dashed #000; margin: 8px 0; }
 #recibo-impressao .recibo-item,
-#recibo-impressao .recibo-total-linha { font-size: 11px; gap: 4px; }
+#recibo-impressao .recibo-total-linha { font-size: 15px; gap: 6px; padding: 4px 0; }
+#recibo-impressao .recibo-total-linha.destaque { font-size: 18px; font-weight: 800; border-top: 2px dashed #000; }
 #recibo-impressao .recibo-item > span:first-child { flex: 1; min-width: 0; }
 #recibo-impressao .recibo-item > span:last-child,
 #recibo-impressao .recibo-total-linha > span:last-child { white-space: nowrap; }
-#recibo-impressao .recibo-item small { font-weight: 400; font-size: 10px; }
-#recibo-impressao .recibo-mesa { font-size: 18px; }
-#recibo-impressao .recibo-cozinha-item { font-size: 13px; }
-#recibo-impressao .recibo-cozinha-opcoes { font-size: 11px; font-weight: 400; }
-#recibo-impressao .recibo-cozinha-obs { font-size: 12px; }
+#recibo-impressao .recibo-item small { font-weight: 600; font-size: 13px; }
+#recibo-impressao .recibo-mesa { font-size: 28px; font-weight: 800; }
+#recibo-impressao .recibo-cozinha-item { font-size: 19px; padding: 7px 0; }
+#recibo-impressao .recibo-cozinha-opcoes { font-size: 16px; font-weight: 600; }
+#recibo-impressao .recibo-cozinha-obs { font-size: 17px; font-weight: 800; }
