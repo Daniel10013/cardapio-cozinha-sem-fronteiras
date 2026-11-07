@@ -471,8 +471,8 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
 
   body.imprimindo-recibo > *:not(#recibo-impressao) { display: none !important; }
   /* Impressora térmica de 50mm: a página (@page) é definida por JS só na hora de imprimir o recibo */
-  body.imprimindo-recibo #recibo-impressao { display: block !important; width: 46mm; margin: 0; padding: 0; }
-  body.imprimindo-recibo { width: 46mm; margin: 0; padding: 0; }
+  body.imprimindo-recibo #recibo-impressao { display: block !important; width: var(--recibo-largura, 48mm); margin: 0 auto; padding: 0; }
+  body.imprimindo-recibo { width: var(--papel, 58mm); margin: 0; padding: 0; }
 }
 
 /* Recibo estreito (50mm): textos longos quebram em linhas, preço sempre à direita */
