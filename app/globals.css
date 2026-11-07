@@ -471,30 +471,30 @@ button.btn-perigo { background: #fdecea; color: #a3352b; border: none; padding: 
 
   body.imprimindo-recibo > *:not(#recibo-impressao) { display: none !important; }
   /* Impressora térmica de 50mm: a página (@page) é definida por JS só na hora de imprimir o recibo */
-  body.imprimindo-recibo #recibo-impressao { display: block !important; width: var(--recibo-largura, 48mm); margin: 0 auto; padding: 0; }
-  body.imprimindo-recibo { width: var(--papel, 58mm); margin: 0; padding: 0; }
+  body.imprimindo-recibo #recibo-impressao { display: block !important; width: 44mm; margin: 0; padding: 0; }
+  body.imprimindo-recibo { width: 44mm; margin: 0; padding: 0; }
 }
 
 /* Recibo estreito (50mm): textos longos quebram em linhas, preço sempre à direita */
 #recibo-impressao {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #000;
   overflow-wrap: anywhere;
 }
-#recibo-impressao h2 { font-size: 18px; font-weight: 800; }
-#recibo-impressao .recibo-subtitulo { font-size: 14px; color: #000; }
-#recibo-impressao .recibo-linha-sep { border-top: 2px dashed #000; margin: 8px 0; }
+#recibo-impressao h2 { font-size: 14px; font-weight: 800; }
+#recibo-impressao .recibo-subtitulo { font-size: 11px; color: #000; }
+#recibo-impressao .recibo-linha-sep { border-top: 1px dashed #000; margin: 5px 0; }
 #recibo-impressao .recibo-item,
-#recibo-impressao .recibo-total-linha { font-size: 15px; gap: 6px; padding: 4px 0; }
-#recibo-impressao .recibo-total-linha.destaque { font-size: 18px; font-weight: 800; border-top: 2px dashed #000; }
+#recibo-impressao .recibo-total-linha { font-size: 12px; gap: 4px; padding: 2px 0; }
+#recibo-impressao .recibo-total-linha.destaque { font-size: 14px; font-weight: 800; border-top: 1px dashed #000; }
 #recibo-impressao .recibo-item > span:first-child { flex: 1; min-width: 0; }
 #recibo-impressao .recibo-item > span:last-child,
 #recibo-impressao .recibo-total-linha > span:last-child { white-space: nowrap; }
-#recibo-impressao .recibo-item small { font-weight: 600; font-size: 13px; }
-#recibo-impressao .recibo-mesa { font-size: 28px; font-weight: 800; }
-#recibo-impressao .recibo-cozinha-item { font-size: 19px; padding: 7px 0; }
-#recibo-impressao .recibo-cozinha-opcoes { font-size: 16px; font-weight: 600; }
-#recibo-impressao .recibo-cozinha-obs { font-size: 17px; font-weight: 800; }
+#recibo-impressao .recibo-item small { font-weight: 600; font-size: 11px; }
+#recibo-impressao .recibo-mesa { font-size: 20px; font-weight: 800; }
+#recibo-impressao .recibo-cozinha-item { font-size: 14px; padding: 4px 0; }
+#recibo-impressao .recibo-cozinha-opcoes { font-size: 12px; font-weight: 600; }
+#recibo-impressao .recibo-cozinha-obs { font-size: 13px; font-weight: 800; }

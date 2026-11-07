@@ -3,17 +3,6 @@
 import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
-// Largura do papel da impressora térmica deste computador (50, 58 ou 80 mm).
-const CHAVE_PAPEL = 'csf_papel_mm';
-function larguraPapelMm() {
-  try {
-    const n = Number(localStorage.getItem(CHAVE_PAPEL));
-    return n >= 40 && n <= 110 ? n : 58;
-  } catch {
-    return 58;
-  }
-}
-
 function formatarMoeda(v) {
   return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -239,31 +228,14 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
   useEffect(() => {
     if (!reciboHtml) return;
     document.body.classList.add('imprimindo-recibo');
-    // Papel da impressora térmica: 50mm de largura. O comprimento é medido do próprio
-    // conteúdo, porque "auto" não é respeitado e o cupom era cortado no meio.
-    // Margem da página = 0 (assim o navegador também não imprime data/endereço do site);
-    // a folga lateral fica dentro do próprio cupom.
-    const papelMm = larguraPapelMm();
-    const conteudoMm = papelMm - 10;
-    let alturaMm = 120;
-    const recibo = document.getElementById('recibo-impressao');
-    if (recibo) {
-      const anterior = recibo.getAttribute('style');
-      recibo.style.cssText = `display:block;position:absolute;visibility:hidden;width:${conteudoMm}mm;padding:0;margin:0;`;
-      alturaMm = Math.ceil((recibo.getBoundingClientRect().height * 25.4) / 96) + 14;
-      if (anterior === null) recibo.removeAttribute('style');
-      else recibo.setAttribute('style', anterior);
-    }
-    document.body.style.setProperty('--papel', `${papelMm}mm`);
-    document.body.style.setProperty('--recibo-largura', `${conteudoMm}mm`);
+    // Papel da impressora térmica: 50mm de largura, comprimento automático
+    // (tamanhos fixos de altura deslocavam o cupom no papel desta impressora).
     const estilo = document.createElement('style');
-    estilo.textContent = `@page { size: ${papelMm}mm ${alturaMm}mm; margin: 0; }`;
+    estilo.textContent = '@page { size: 50mm auto; margin: 2mm; }';
     document.head.appendChild(estilo);
     window.print();
     const limpar = () => {
       document.body.classList.remove('imprimindo-recibo');
-      document.body.style.removeProperty('--papel');
-      document.body.style.removeProperty('--recibo-largura');
       estilo.remove();
     };
     window.addEventListener('afterprint', limpar, { once: true });
@@ -1393,19 +1365,10 @@ function AbaConfig({ config, onConfigAtualizado }) {
   const [msgSenha, setMsgSenha] = useState('');
   const [acessos, setAcessos] = useState([]);
   const inputLogoRef = useRef(null);
-  const [papel, setPapel] = useState(58);
 
   useEffect(() => {
     api('/acessos').then(setAcessos);
-    setPapel(larguraPapelMm());
   }, []);
-
-  function mudarPapel(valor) {
-    setPapel(valor);
-    try {
-      localStorage.setItem(CHAVE_PAPEL, String(valor));
-    } catch {}
-  }
 
   async function salvarNome() {
     try {
@@ -1464,20 +1427,6 @@ function AbaConfig({ config, onConfigAtualizado }) {
             </button>
             <input type="file" accept="image/*" ref={inputLogoRef} style={{ display: 'none' }} onChange={enviarLogo} />
           </div>
-        </div>
-      </div>
-
-      <div className="cartao">
-        <h3>Impressora de cupom (este computador)</h3>
-        <p style={{ fontSize: '0.9rem', color: '#666', margin: '0 0 8px' }}>
-          Largura do papel da bobina. Se o cupom sair cortado ou deslocado, troque aqui e imprima de novo.
-        </p>
-        <div className="linha-form">
-          <select value={papel} onChange={(e) => mudarPapel(Number(e.target.value))}>
-            <option value={50}>50 mm</option>
-            <option value={58}>58 mm</option>
-            <option value={80}>80 mm</option>
-          </select>
         </div>
       </div>
 
