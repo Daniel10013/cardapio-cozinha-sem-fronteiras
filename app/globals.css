@@ -110,6 +110,14 @@ main { padding: 12px 12px 120px; max-width: 640px; margin: 0 auto; }
   border-radius: 8px;
   flex-shrink: 0;
 }
+.prato-foto-clicavel { cursor: zoom-in; }
+.modal.modal-foto { padding: 0 0 16px; overflow-x: hidden; }
+.modal-foto .foto-grande { width: 100%; max-height: 55vh; object-fit: cover; display: block; border-radius: 12px 12px 0 0; }
+.modal-foto h3 { margin: 14px 16px 2px; }
+.modal-foto .preco-grande { margin: 0 16px; color: #a3352b; font-weight: 700; font-size: 1.1rem; }
+.modal-foto .descricao-grande { margin: 10px 16px 0; color: #444; font-size: 0.95rem; line-height: 1.4; }
+.modal-foto .detalhes-grande { margin: 8px 16px 0; color: #888; font-size: 0.85rem; }
+.modal-foto .acoes { margin: 16px 16px 0; }
 .prato-info { flex: 1; }
 .prato-info .nome { font-weight: 600; }
 .prato-info .descricao { font-size: 0.85rem; color: #666; margin-top: 2px; }

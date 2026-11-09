@@ -61,6 +61,7 @@ function PaginaCliente() {
   const [carrinho, setCarrinho] = useState({}); // { [pratoId]: { prato, quantidade } }
 
   const [pratoEscolhendo, setPratoEscolhendo] = useState(null);
+  const [pratoVendo, setPratoVendo] = useState(null); // foto ampliada
   const [modalRevisao, setModalRevisao] = useState(false);
   const [modalFecharConta, setModalFecharConta] = useState(false);
 
@@ -346,7 +347,14 @@ function PaginaCliente() {
                   <h2>{cat.nome}</h2>
                   {cat.pratos.map((prato) => (
                     <div className="prato" key={prato.id}>
-                      {prato.foto && <img className="prato-foto" src={prato.foto} alt={prato.nome} />}
+                      {prato.foto && (
+                        <img
+                          className="prato-foto prato-foto-clicavel"
+                          src={prato.foto}
+                          alt={prato.nome}
+                          onClick={() => setPratoVendo(prato)}
+                        />
+                      )}
                       <div className="prato-info">
                         <div className="nome">{prato.nome}</div>
                         {prato.descricao && <div className="descricao">{prato.descricao}</div>}
@@ -390,6 +398,48 @@ function PaginaCliente() {
               <button onClick={() => setModalRevisao(true)} type="button">
                 Ver pedido
               </button>
+            </div>
+          )}
+
+          {pratoVendo && (
+            <div className="overlay" onClick={() => setPratoVendo(null)}>
+              <div className="modal modal-foto" onClick={(e) => e.stopPropagation()}>
+                <img className="foto-grande" src={pratoVendo.foto} alt={pratoVendo.nome} />
+                <h3>{pratoVendo.nome}</h3>
+                <div className="preco-grande">
+                  {formatarMoeda(pratoVendo.preco)}
+                  {pratoVendo.grupos && pratoVendo.grupos.length > 0 ? ' (a partir de)' : ''}
+                </div>
+                {pratoVendo.descricao && <p className="descricao-grande">{pratoVendo.descricao}</p>}
+                {pratoVendo.peso || pratoVendo.quantidade || pratoVendo.tempo_preparo ? (
+                  <p className="detalhes-grande">
+                    {[
+                      pratoVendo.peso && `⚖ ${pratoVendo.peso}`,
+                      pratoVendo.quantidade && `🍽 ${pratoVendo.quantidade}`,
+                      pratoVendo.tempo_preparo ? `⏱ ${pratoVendo.tempo_preparo} min` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                ) : null}
+                <div className="acoes">
+                  <button className="btn-cancelar" type="button" onClick={() => setPratoVendo(null)}>
+                    Fechar
+                  </button>
+                  <button
+                    className="btn-confirmar"
+                    type="button"
+                    onClick={() => {
+                      const prato = pratoVendo;
+                      setPratoVendo(null);
+                      if (prato.grupos && prato.grupos.length > 0) setPratoEscolhendo(prato);
+                      else alterarQuantidade(prato, 1);
+                    }}
+                  >
+                    {pratoVendo.grupos && pratoVendo.grupos.length > 0 ? 'Escolher opções' : 'Adicionar ao pedido'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
