@@ -15,6 +15,19 @@ export async function POST(request) {
     return Response.json({ erro: 'Preço inválido.' }, { status: 400 });
   }
 
+  // Prato novo entra no fim da categoria (a menos que a ordem seja informada)
+  let ordemFinal = Number(ordem) || 0;
+  if (!ordemFinal) {
+    const { data: ultimo } = await supabaseAdmin()
+      .from('csf_pratos')
+      .select('ordem')
+      .eq('categoria_id', categoriaId)
+      .order('ordem', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    ordemFinal = (ultimo?.ordem || 0) + 1;
+  }
+
   const { data, error } = await supabaseAdmin()
     .from('csf_pratos')
     .insert({
@@ -23,7 +36,7 @@ export async function POST(request) {
       descricao: descricao || '',
       preco: precoNum,
       ativo: true,
-      ordem: Number(ordem) || 0,
+      ordem: ordemFinal,
       tempo_preparo: tempoPreparo !== undefined ? Math.max(0, Number(tempoPreparo) || 0) : 0,
       peso: String(peso || '').trim().slice(0, 40),
       quantidade: String(quantidade || '').trim().slice(0, 40),

@@ -779,6 +779,19 @@ function AbaCardapio() {
     carregar();
   }
 
+  async function moverCategoria(idx, dir) {
+    const ids = categorias.map((c) => c.id);
+    const destino = idx + dir;
+    if (destino < 0 || destino >= ids.length) return;
+    [ids[idx], ids[destino]] = [ids[destino], ids[idx]];
+    try {
+      await api('/cardapio/ordem', { method: 'POST', body: JSON.stringify({ tipo: 'categorias', ids }) });
+      carregar();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function excluirCategoria(id) {
     try {
       await api('/categorias/' + id, { method: 'DELETE' });
@@ -805,14 +818,22 @@ function AbaCardapio() {
         </div>
       </div>
 
-      {categorias.map((cat) => (
-        <CategoriaBloco key={cat.id} categoria={cat} onExcluir={excluirCategoria} onAtualizar={carregar} />
+      {categorias.map((cat, idx) => (
+        <CategoriaBloco
+          key={cat.id}
+          categoria={cat}
+          onExcluir={excluirCategoria}
+          onAtualizar={carregar}
+          podeSubir={idx > 0}
+          podeDescer={idx < categorias.length - 1}
+          onMover={(dir) => moverCategoria(idx, dir)}
+        />
       ))}
     </>
   );
 }
 
-function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
+function CategoriaBloco({ categoria, onExcluir, onAtualizar, podeSubir, podeDescer, onMover }) {
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
   const [preco, setPreco] = useState('');
@@ -837,6 +858,19 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
     onAtualizar();
   }
 
+  async function moverPrato(idx, dir) {
+    const ids = categoria.pratos.map((p) => p.id);
+    const destino = idx + dir;
+    if (destino < 0 || destino >= ids.length) return;
+    [ids[idx], ids[destino]] = [ids[destino], ids[idx]];
+    try {
+      await api('/cardapio/ordem', { method: 'POST', body: JSON.stringify({ tipo: 'pratos', ids }) });
+      onAtualizar();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
   async function renomear() {
     const novoNome = prompt('Novo nome da categoria:', categoria.nome);
     if (novoNome === null) return;
@@ -854,6 +888,26 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
       <h3>
         {categoria.nome}
         <span>
+          <button
+            className="btn-secundario"
+            onClick={() => onMover(-1)}
+            disabled={!podeSubir}
+            type="button"
+            title="Subir categoria"
+            style={{ marginRight: 4 }}
+          >
+            ↑
+          </button>
+          <button
+            className="btn-secundario"
+            onClick={() => onMover(1)}
+            disabled={!podeDescer}
+            type="button"
+            title="Descer categoria"
+            style={{ marginRight: 8 }}
+          >
+            ↓
+          </button>
           <button className="btn-secundario" onClick={renomear} type="button" style={{ marginRight: 8 }}>
             Renomear
           </button>
@@ -864,9 +918,12 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar }) {
       </h3>
       <div>
         {categoria.pratos.length === 0 && <p style={{ color: '#888', fontSize: '0.9rem' }}>Nenhum prato ainda.</p>}
-        {categoria.pratos.map((p) => (
+        {categoria.pratos.map((p, idx) => (
           <PratoLinha
             key={p.id}
+            podeSubir={idx > 0}
+            podeDescer={idx < categoria.pratos.length - 1}
+            onMover={(dir) => moverPrato(idx, dir)}
             prato={p}
             irmaos={categoria.pratos}
             abrirOpcoes={p.id === novoPratoId}
@@ -1146,7 +1203,7 @@ function EditorOpcoes({ prato, irmaos, onFechar }) {
   );
 }
 
-function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar }) {
+function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar, podeSubir, podeDescer, onMover }) {
   const inputFotoRef = useRef(null);
 
   const [editandoOpcoes, setEditandoOpcoes] = useState(!!abrirOpcoes);
@@ -1265,6 +1322,12 @@ function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar }) {
       )}
       <button className="btn-secundario" onClick={abrirEdicao} type="button">
         Editar
+      </button>
+      <button className="btn-secundario" onClick={() => onMover(-1)} disabled={!podeSubir} type="button" title="Subir prato">
+        ↑
+      </button>
+      <button className="btn-secundario" onClick={() => onMover(1)} disabled={!podeDescer} type="button" title="Descer prato">
+        ↓
       </button>
       <button className="btn-secundario" onClick={() => setEditandoOpcoes((v) => !v)} type="button">
         Opções
