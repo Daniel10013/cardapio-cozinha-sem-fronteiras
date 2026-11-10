@@ -74,6 +74,7 @@ export async function POST(request) {
       prato_id: prato.id,
       nome_prato: prato.nome,
       opcoes: textos.join(' · '),
+      observacao: String(item.observacao || '').trim().slice(0, 200),
       preco_unitario: precoUnitario,
       quantidade: qtd,
       subtotal,

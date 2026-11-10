@@ -221,6 +221,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
         nome: i.nome_prato,
         porcao: i.porcao,
         opcoes: i.opcoes,
+        observacao: i.observacao,
       })),
     });
   }
@@ -350,6 +351,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
                   })}
                 </div>
               )}
+              {i.observacao && <div className="recibo-cozinha-obs">OBS: {i.observacao}</div>}
             </div>
           ))}
           {reciboHtml.observacao && (
@@ -599,6 +601,11 @@ function AbaPedidos({
                               <strong>{i.quantidade}x</strong> {i.nome_prato}
                               {i.porcao ? ` (${i.porcao})` : ''}
                               {i.opcoes && <div style={{ color: '#7a5a12', fontSize: '0.85rem' }}>{i.opcoes}</div>}
+                              {i.observacao && (
+                                <div style={{ color: '#a3352b', fontSize: '0.85rem', fontWeight: 600 }}>
+                                  Obs: {i.observacao}
+                                </div>
+                              )}
                             </span>
                             <span style={{ color: '#555' }}>
                               {formatarMoeda(i.preco_unitario)} cada — <strong>{formatarMoeda(i.subtotal)}</strong>
@@ -742,7 +749,10 @@ function AbaRelatorio({ gatilhoAtualizacao }) {
                         </div>
                         <div style={{ fontSize: '0.85rem', color: '#555' }}>
                           {p.itens
-                            .map((i) => `${i.quantidade}x ${i.nome_prato}${i.opcoes ? ` (${i.opcoes})` : ''}`)
+                            .map(
+                              (i) =>
+                                `${i.quantidade}x ${i.nome_prato}${i.opcoes ? ` (${i.opcoes})` : ''}${i.observacao ? ` [obs: ${i.observacao}]` : ''}`,
+                            )
                             .join(', ')}
                         </div>
                         {p.observacao && (

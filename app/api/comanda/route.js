@@ -15,7 +15,7 @@ export async function GET(request) {
   if (ids.length) {
     const { data, error } = await db
       .from('csf_itens_pedido')
-      .select('pedido_id, nome_prato, opcoes, quantidade, preco_unitario, subtotal')
+      .select('pedido_id, nome_prato, opcoes, observacao, quantidade, preco_unitario, subtotal')
       .in('pedido_id', ids)
       .order('id');
     if (error) return Response.json({ erro: error.message }, { status: 500 });
@@ -41,6 +41,7 @@ export async function GET(request) {
       .map((i) => ({
         nome: i.nome_prato,
         opcoes: i.opcoes || '',
+        observacao: i.observacao || '',
         quantidade: i.quantidade,
         precoUnitario: Number(i.preco_unitario),
         subtotal: Number(i.subtotal),

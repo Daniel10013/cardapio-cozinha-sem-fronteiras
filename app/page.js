@@ -161,6 +161,10 @@ function PaginaCliente() {
     });
   }
 
+  function alterarObservacao(chave, observacao) {
+    setCarrinho((atual) => (atual[chave] ? { ...atual, [chave]: { ...atual[chave], observacao } } : atual));
+  }
+
   function alterarQuantidade(prato, delta) {
     setCarrinho((atual) => {
       // prefixo "p": chaves só com números fariam o JavaScript reordenar o carrinho pelo id
@@ -455,6 +459,7 @@ function PaginaCliente() {
             <ModalRevisarPedido
               itens={itensCarrinho}
               onAlterar={alterarPorChave}
+              onObservacao={alterarObservacao}
               total={totalCarrinho}
               modo={modo}
               mesaAtual={mesaAtual}
@@ -553,7 +558,7 @@ function ModalOpcoes({ prato, onFechar, onAdicionar }) {
   );
 }
 
-function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso, onAlterar }) {
+function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso, onAlterar, onObservacao }) {
   const paraLevar = modo === 'levar';
   const [valorCampo, setValorCampo] = useState(paraLevar ? '' : mesaAtual);
   const [observacao, setObservacao] = useState('');
@@ -577,7 +582,12 @@ function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso
         body: JSON.stringify({
           mesa: mesaValor,
           observacao,
-          itens: itens.map((i) => ({ pratoId: i.prato.id, quantidade: i.quantidade, opcoes: i.opcoes.map((o) => o.id) })),
+          itens: itens.map((i) => ({
+            pratoId: i.prato.id,
+            quantidade: i.quantidade,
+            opcoes: i.opcoes.map((o) => o.id),
+            observacao: i.observacao || '',
+          })),
         }),
       });
       const dados = await resp.json();
@@ -617,25 +627,35 @@ function ModalRevisarPedido({ itens, total, modo, mesaAtual, onFechar, onSucesso
       <div className="modal">
         <h3>Confirmar pedido</h3>
         {itens.map((i) => (
-          <div className="linha-item" key={i.chave} style={{ alignItems: 'center', gap: 8 }}>
-            <span style={{ flex: 1 }}>
-              {i.prato.nome}
-              {i.opcoes.length > 0 && (
-                <small style={{ display: 'block', color: '#888' }}>
-                  {i.opcoes.map((o) => o.nome).join(' · ')}
-                </small>
-              )}
-            </span>
-            <div className="qtd-controle">
-              <button type="button" aria-label="Diminuir" onClick={() => onAlterar(i.chave, -1)}>
-                −
-              </button>
-              <span>{i.quantidade}</span>
-              <button type="button" aria-label="Aumentar" onClick={() => onAlterar(i.chave, 1)}>
-                +
-              </button>
+          <div key={i.chave} style={{ marginBottom: 10 }}>
+            <div className="linha-item" style={{ alignItems: 'center', gap: 8, marginBottom: 2 }}>
+              <span style={{ flex: 1 }}>
+                {i.prato.nome}
+                {i.opcoes.length > 0 && (
+                  <small style={{ display: 'block', color: '#888' }}>
+                    {i.opcoes.map((o) => o.nome).join(' · ')}
+                  </small>
+                )}
+              </span>
+              <div className="qtd-controle">
+                <button type="button" aria-label="Diminuir" onClick={() => onAlterar(i.chave, -1)}>
+                  −
+                </button>
+                <span>{i.quantidade}</span>
+                <button type="button" aria-label="Aumentar" onClick={() => onAlterar(i.chave, 1)}>
+                  +
+                </button>
+              </div>
+              <span style={{ minWidth: 70, textAlign: 'right' }}>{formatarMoeda(i.precoUnit * i.quantidade)}</span>
             </div>
-            <span style={{ minWidth: 70, textAlign: 'right' }}>{formatarMoeda(i.precoUnit * i.quantidade)}</span>
+            <input
+              type="text"
+              className="obs-item"
+              placeholder="Observação deste prato (ex: sem cebola)"
+              maxLength={200}
+              value={i.observacao || ''}
+              onChange={(e) => onObservacao(i.chave, e.target.value)}
+            />
           </div>
         ))}
         <div
@@ -859,6 +879,7 @@ function DetalheComanda({ config, comandaId, mesaUrl, temOutras, onPedirMais, on
                   <span>
                     {i.quantidade}x {i.nome}
                     {i.opcoes && <small style={{ display: 'block', color: '#888' }}>{i.opcoes}</small>}
+                    {i.observacao && <small style={{ display: 'block', color: '#7a5a12' }}>Obs: {i.observacao}</small>}
                   </span>
                   <span>{formatarMoeda(i.subtotal)}</span>
                 </div>

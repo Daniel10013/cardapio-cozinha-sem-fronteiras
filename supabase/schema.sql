@@ -85,6 +85,8 @@ create table if not exists csf_opcoes (
 
 -- Texto com o que o cliente escolheu em cada item do pedido
 alter table csf_itens_pedido add column if not exists opcoes text default '';
+-- Observação do cliente para aquele prato (ex: "sem cebola")
+alter table csf_itens_pedido add column if not exists observacao text default '';
 
 create table if not exists csf_fechamentos (
   id bigint generated always as identity primary key,

@@ -194,6 +194,7 @@ main { padding: 12px 12px 120px; max-width: 640px; margin: 0 auto; }
 .modal .btn-confirmar:disabled { background: #ccc; color: #777; cursor: not-allowed; }
 .modal .btn-cancelar { background: #eee; }
 
+.modal input.obs-item { margin-top: 2px; padding: 6px 8px; font-size: 0.85rem; background: #faf7f2; }
 .modal .grupo-opcoes { margin-top: 14px; }
 .modal .grupo-opcoes h4 { margin: 0 0 4px; font-size: 1rem; }
 .modal .grupo-opcoes .dica { font-size: 0.8rem; color: #888; margin-bottom: 4px; }
