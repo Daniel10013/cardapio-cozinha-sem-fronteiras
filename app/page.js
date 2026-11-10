@@ -362,6 +362,7 @@ function PaginaCliente() {
                       <div className="prato-info">
                         <div className="nome">{prato.nome}</div>
                         {prato.descricao && <div className="descricao">{prato.descricao}</div>}
+                        {prato.observacao && <div className="aviso-prato">⚠ {prato.observacao}</div>}
                         <div className="preco">{formatarMoeda(prato.preco)}</div>
                         {prato.peso || prato.quantidade ? (
                           <div className="tempo-preparo">{[prato.peso && `⚖ ${prato.peso}`, prato.quantidade && `🍽 ${prato.quantidade}`].filter(Boolean).join(' · ')}</div>
@@ -415,6 +416,7 @@ function PaginaCliente() {
                   {pratoVendo.grupos && pratoVendo.grupos.length > 0 ? ' (a partir de)' : ''}
                 </div>
                 {pratoVendo.descricao && <p className="descricao-grande">{pratoVendo.descricao}</p>}
+                {pratoVendo.observacao && <p className="aviso-prato aviso-grande">⚠ {pratoVendo.observacao}</p>}
                 {pratoVendo.peso || pratoVendo.quantidade || pratoVendo.tempo_preparo ? (
                   <p className="detalhes-grande">
                     {[

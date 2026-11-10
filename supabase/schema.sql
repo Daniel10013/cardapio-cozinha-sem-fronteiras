@@ -44,6 +44,8 @@ create table if not exists csf_pratos (
 -- Para bancos que já tinham csf_pratos antes de peso/quantidade existirem
 alter table csf_pratos add column if not exists peso text default '';
 alter table csf_pratos add column if not exists quantidade text default '';
+-- Observação do restaurante sobre o prato (aparece para o cliente e na comanda da cozinha)
+alter table csf_pratos add column if not exists observacao text default '';
 
 create table if not exists csf_pedidos (
   id bigint generated always as identity primary key,

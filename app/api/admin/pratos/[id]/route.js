@@ -7,7 +7,7 @@ export async function PATCH(request, { params }) {
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
-  const { nome, descricao, preco, ativo, ordem, categoriaId, tempoPreparo, peso, quantidade } = body || {};
+  const { nome, descricao, preco, ativo, ordem, categoriaId, tempoPreparo, peso, quantidade, observacao } = body || {};
 
   if (preco !== undefined) {
     const precoNum = Number(preco);
@@ -26,6 +26,7 @@ export async function PATCH(request, { params }) {
   if (tempoPreparo !== undefined) atualizacao.tempo_preparo = Math.max(0, Number(tempoPreparo) || 0);
   if (peso !== undefined) atualizacao.peso = String(peso).trim().slice(0, 40);
   if (quantidade !== undefined) atualizacao.quantidade = String(quantidade).trim().slice(0, 40);
+  if (observacao !== undefined) atualizacao.observacao = String(observacao).trim().slice(0, 200);
 
   const { error } = await supabaseAdmin().from('csf_pratos').update(atualizacao).eq('id', id);
   if (error) return Response.json({ erro: error.message }, { status: 500 });

@@ -222,6 +222,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
         porcao: i.porcao,
         opcoes: i.opcoes,
         observacao: i.observacao,
+        notaPrato: i.notaPrato,
       })),
     });
   }
@@ -351,6 +352,7 @@ function Painel({ config, onLogout, onConfigAtualizado }) {
                   })}
                 </div>
               )}
+              {i.notaPrato && <div className="recibo-cozinha-opcoes">* {i.notaPrato}</div>}
               {i.observacao && <div className="recibo-cozinha-obs">OBS: {i.observacao}</div>}
             </div>
           ))}
@@ -851,13 +853,24 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar, podeSubir, podeDesc
   const [peso, setPeso] = useState('');
   const [quantidade, setQuantidade] = useState('');
   const [novoPratoId, setNovoPratoId] = useState(null);
+  const [observacaoPrato, setObservacaoPrato] = useState('');
 
   async function adicionarPrato() {
     if (!nome || !preco) return alert('Preencha nome e preço do prato.');
     const criado = await api('/pratos', {
       method: 'POST',
-      body: JSON.stringify({ categoriaId: categoria.id, nome, descricao, preco, tempoPreparo, peso, quantidade }),
+      body: JSON.stringify({
+        categoriaId: categoria.id,
+        nome,
+        descricao,
+        preco,
+        tempoPreparo,
+        peso,
+        quantidade,
+        observacao: observacaoPrato,
+      }),
     });
+    setObservacaoPrato('');
     setNovoPratoId(criado.id);
     setNome('');
     setDescricao('');
@@ -978,6 +991,13 @@ function CategoriaBloco({ categoria, onExcluir, onAtualizar, podeSubir, podeDesc
           value={quantidade}
           onChange={(e) => setQuantidade(e.target.value)}
           style={{ maxWidth: 130 }}
+        />
+        <input
+          type="text"
+          placeholder="Observação do prato (cliente e cozinha veem)"
+          value={observacaoPrato}
+          onChange={(e) => setObservacaoPrato(e.target.value)}
+          maxLength={200}
         />
         <button className="btn" onClick={adicionarPrato} type="button">
           Adicionar prato
@@ -1228,6 +1248,7 @@ function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar, podeSubir, podeDe
       tempoPreparo: String(prato.tempo_preparo || 0),
       peso: prato.peso || '',
       quantidade: prato.quantidade || '',
+      observacao: prato.observacao || '',
     });
     setEditando(true);
   }
@@ -1295,6 +1316,7 @@ function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar, podeSubir, podeDe
           {campo('tempoPreparo', 'Preparo (min)', { type: 'number', min: '0', style: { maxWidth: 120 } })}
           {campo('peso', 'Peso (ex: 300g)', { style: { maxWidth: 130 } })}
           {campo('quantidade', 'Qtd (ex: 6 unid.)', { style: { maxWidth: 130 } })}
+          {campo('observacao', 'Observação do prato (cliente e cozinha veem)', { maxLength: 200 })}
           <button className="btn" onClick={salvarEdicao} type="button">
             Salvar
           </button>
@@ -1320,6 +1342,9 @@ function PratoLinha({ prato, irmaos, abrirOpcoes, onAtualizar, podeSubir, podeDe
         {prato.peso ? <span className="badge-tempo">⚖ {prato.peso}</span> : null}
         {prato.quantidade ? <span className="badge-tempo">🍽 {prato.quantidade}</span> : null}
         {prato.descricao && <div style={{ fontSize: '0.85rem', color: '#777' }}>{prato.descricao}</div>}
+        {prato.observacao && (
+          <div style={{ fontSize: '0.85rem', color: '#7a5a12' }}>Obs: {prato.observacao}</div>
+        )}
       </div>
       <button className="btn-secundario" onClick={() => inputFotoRef.current.click()} type="button">
         {prato.foto ? 'Trocar foto' : 'Adicionar foto'}
