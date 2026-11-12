@@ -62,6 +62,7 @@ function PaginaCliente() {
 
   const [pratoEscolhendo, setPratoEscolhendo] = useState(null);
   const [pratoVendo, setPratoVendo] = useState(null); // foto ampliada
+  const [categoriaAtiva, setCategoriaAtiva] = useState(null); // aba do cardápio
   const [modalRevisao, setModalRevisao] = useState(false);
   const [modalFecharConta, setModalFecharConta] = useState(false);
 
@@ -183,6 +184,10 @@ function PaginaCliente() {
     });
     setPratoEscolhendo(null);
   }
+
+  const categoriaAtual = Array.isArray(cardapio)
+    ? cardapio.find((c) => c.id === categoriaAtiva) || cardapio[0]
+    : undefined;
 
   const itensCarrinho = Object.values(carrinho).filter((i) => i.quantidade > 0);
   const totalCarrinho = itensCarrinho.reduce((acc, i) => acc + i.precoUnit * i.quantidade, 0);
@@ -330,6 +335,23 @@ function PaginaCliente() {
               )}
             </div>
             <div className="mesa">{mesaLabel}</div>
+            {Array.isArray(cardapio) && cardapio.length > 0 && (
+              <nav className="abas-cardapio">
+                {cardapio.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={cat.id === categoriaAtual?.id ? 'ativa' : ''}
+                    onClick={() => {
+                      setCategoriaAtiva(cat.id);
+                      window.scrollTo({ top: 0 });
+                    }}
+                  >
+                    {cat.nome}
+                  </button>
+                ))}
+              </nav>
+            )}
           </header>
 
           {!lojaAberta && (
@@ -346,7 +368,7 @@ function PaginaCliente() {
             )}
             {!carregandoCardapio &&
               cardapio &&
-              cardapio.map((cat) => (
+              (categoriaAtual ? [categoriaAtual] : []).map((cat) => (
                 <section className="categoria" key={cat.id}>
                   <h2>{cat.nome}</h2>
                   {cat.pratos.map((prato) => (

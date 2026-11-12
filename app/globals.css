@@ -84,6 +84,33 @@ header.topo .topo-linha { display: flex; justify-content: space-between; align-i
 
 main { padding: 12px 12px 120px; max-width: 640px; margin: 0 auto; }
 
+header.topo .abas-cardapio {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 12px -20px -16px;
+  padding: 0 20px 12px;
+  scrollbar-width: none;
+}
+header.topo .abas-cardapio::-webkit-scrollbar { display: none; }
+header.topo .abas-cardapio button {
+  flex: none;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.45);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+header.topo .abas-cardapio button.ativa {
+  background: #fff;
+  color: #a3352b;
+  font-weight: 700;
+  border-color: #fff;
+}
+
 .categoria { margin-top: 22px; }
 .categoria h2 {
   font-size: 1.05rem;
